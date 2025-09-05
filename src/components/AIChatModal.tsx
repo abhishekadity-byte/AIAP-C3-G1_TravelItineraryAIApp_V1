@@ -75,7 +75,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   // Test n8n connection
   const testN8nConnection = async () => {
-    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl || N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
       setN8nStatus('disconnected');
       return;
     }
@@ -113,7 +113,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   };
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
-    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl || N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
       console.log('❌ n8n not configured properly');
       return null;
     }
@@ -180,16 +180,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       if (error.name === 'AbortError') {
         console.log('⏰ n8n webhook timeout');
-        return {
-          content: "I'm taking a bit longer to process your request. Let me give you a quick response while I work on the details.",
-          suggestions: ["Tell me more about your preferences", "What's your budget range?", "When do you want to travel?"]
-        };
+      } else if (error.message.includes('Failed to fetch')) {
+        console.log('🌐 Network error - n8n URL may not be accessible or configured correctly');
+        console.log('💡 Check your .env file and ensure n8n instance is running');
       }
       
-      // Log the specific error for debugging
-      if (error.message.includes('Failed to fetch')) {
-        console.error('🌐 Network error - check if n8n URL is accessible');
-      }
+      // Always return null to fall back to local AI
+      console.log('🔄 Falling back to local AI processing');
       
       return null; // Fall back to local AI
     }
@@ -401,11 +398,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         } else {
           console.log('❌ n8n webhook failed, falling back to local AI');
         }
+      } else {
+        console.log('ℹ️ n8n not enabled or URL not configured, using local AI');
       }
       
       // Fall back to local AI if n8n fails or is disabled
       if (!aiResponse) {
-        console.log('Using local AI fallback');
+        console.log('🤖 Using local AI fallback');
         aiResponse = generateAIResponse(currentInput);
       }
 
