@@ -53,15 +53,6 @@ export const useAuth = () => {
     return { error };
   };
 
-  const signInWithProvider = async (provider: 'google' | 'facebook') => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    return { data, error };
-  };
 
   return {
     user,
@@ -70,6 +61,5 @@ export const useAuth = () => {
     signUp,
     signIn,
     signOut,
-    signInWithProvider,
   };
 };

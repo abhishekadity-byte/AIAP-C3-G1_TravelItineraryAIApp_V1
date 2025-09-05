@@ -8,7 +8,7 @@ interface FormErrors {
 }
 
 const LoginPage: React.FC = () => {
-  const { signIn, signUp, signInWithProvider } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -92,16 +92,6 @@ const LoginPage: React.FC = () => {
     alert('Forgot password functionality would be implemented here');
   };
 
-  const handleSocialLogin = (provider: 'google' | 'facebook') => {
-    setIsLoading(true);
-    
-    signInWithProvider(provider).then(({ error }) => {
-      setIsLoading(false);
-      if (error) {
-        setErrors({ submit: error.message });
-      }
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center p-4 relative overflow-hidden">
@@ -239,46 +229,9 @@ const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-sm text-blue-200 hover:text-white transition-colors"
-              >
-                Forgot password?
-              </button>
-            </div>
-
-            {errors.submit && (
-              <div className="text-red-300 text-sm text-center bg-red-500/20 backdrop-blur-sm rounded-lg p-3">
-                {errors.submit}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 focus:ring-4 focus:ring-orange-300 transform hover:scale-105 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {isSignupMode ? 'Creating Account...' : 'Signing In...'}
-                </div>
-              ) : (
-                isSignupMode ? 'Create Account' : 'Sign In'
-              )}
-            </button>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/30"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-transparent text-blue-100">Or continue with</span>
-              </div>
-            </div>
 
             {/* Social Login */}
-            <div className="grid grid-cols-2 gap-4">
+          <div className="text-center mt-8">
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
