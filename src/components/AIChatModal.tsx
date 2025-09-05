@@ -15,12 +15,21 @@ interface AIChatModalProps {
   onCreateTrip: (tripData: any) => void;
 }
 
+// Configuration for n8n webhook
+const N8N_CONFIG = {
+  webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
+  enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
+  timeout: 30000 // 30 seconds timeout
+};
+
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'ai',
-      content: "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
+      content: N8N_CONFIG.enabled 
+        ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
+        : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
       timestamp: new Date(),
       suggestions: [
         "I want to visit Europe for 2 weeks",
@@ -33,6 +42,14 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [tripData, setTripData] = useState<any>({});
+  const [conversationContext, setConversationContext] = useState<any>({
+    destination: null,
+    duration: null,
+    budget: null,
+    travelers: null,
+    tripType: null,
+    preferences: []
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +67,109 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     }
   }, [isOpen]);
 
+  // Function to call n8n webhook
+  const callN8nWebhook = async (userMessage: string, context: any) => {
+    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+      return null;
+    }
+
+    try {
+      const payload = {
+        message: userMessage,
+        context: context,
+        conversationHistory: messages.slice(-5), // Send last 5 messages for context
+        timestamp: new Date().toISOString(),
+        userId: 'user-' + Date.now(), // In real app, use actual user ID
+        sessionId: 'session-' + Date.now() // In real app, maintain session ID
+      };
+
+      console.log('Sending to n8n webhook:', payload);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
+
+      const response = await fetch(N8N_CONFIG.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('n8n response:', result);
+
+      return {
+        content: result.response || result.message || 'I received your message and I\'m processing it.',
+        suggestions: result.suggestions || [],
+        context: result.context || {},
+        tripData: result.tripData || null,
+        shouldCreateTrip: result.shouldCreateTrip || false
+      };
+
+    } catch (error) {
+      console.error('Error calling n8n webhook:', error);
+      
+      if (error.name === 'AbortError') {
+        return {
+          content: "I'm taking a bit longer to process your request. Let me give you a quick response while I work on the details.",
+          suggestions: ["Tell me more about your preferences", "What's your budget range?", "When do you want to travel?"]
+        };
+      }
+      
+      return null; // Fall back to local AI
+    }
+  };
+
+  // Enhanced context extraction
+  const extractContextFromMessage = (message: string) => {
+    const lowerMessage = message.toLowerCase();
+    const newContext = { ...conversationContext };
+
+    // Extract destination
+    const destinations = ['europe', 'asia', 'america', 'africa', 'australia', 'paris', 'london', 'tokyo', 'thailand', 'bali', 'italy', 'spain', 'france', 'germany', 'japan', 'singapore', 'vietnam', 'cambodia', 'india', 'nepal', 'peru', 'brazil', 'argentina', 'chile', 'mexico', 'canada', 'usa', 'new york', 'california', 'florida', 'hawaii'];
+    const foundDestination = destinations.find(dest => lowerMessage.includes(dest));
+    if (foundDestination) newContext.destination = foundDestination;
+
+    // Extract duration
+    const durationMatch = lowerMessage.match(/(\d+)\s*(day|week|month)s?/);
+    if (durationMatch) {
+      newContext.duration = `${durationMatch[1]} ${durationMatch[2]}${durationMatch[1] !== '1' ? 's' : ''}`;
+    }
+
+    // Extract budget
+    const budgetMatch = lowerMessage.match(/\$(\d+(?:,\d+)*)/);
+    if (budgetMatch) {
+      newContext.budget = budgetMatch[1].replace(',', '');
+    }
+
+    // Extract travelers count
+    const travelersMatch = lowerMessage.match(/(\d+)\s*(people|person|traveler|adult)/);
+    if (travelersMatch) {
+      newContext.travelers = parseInt(travelersMatch[1]);
+    }
+
+    // Extract trip type
+    const tripTypes = ['romantic', 'adventure', 'family', 'business', 'solo', 'leisure'];
+    const foundTripType = tripTypes.find(type => lowerMessage.includes(type));
+    if (foundTripType) newContext.tripType = foundTripType;
+
+    // Extract preferences
+    const preferences = ['beach', 'mountain', 'city', 'culture', 'food', 'nightlife', 'relaxation', 'shopping', 'history', 'nature'];
+    const foundPreferences = preferences.filter(pref => lowerMessage.includes(pref));
+    if (foundPreferences.length > 0) {
+      newContext.preferences = [...new Set([...newContext.preferences, ...foundPreferences])];
+    }
+
+    return newContext;
+  };
   const generateAIResponse = (userMessage: string): { content: string; suggestions?: string[] } => {
     const lowerMessage = userMessage.toLowerCase();
     
@@ -189,6 +309,79 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     setInputMessage('');
     setIsTyping(true);
 
+    // Extract context from user message
+    const newContext = extractContextFromMessage(currentInput);
+    setConversationContext(newContext);
+
+    try {
+      let aiResponse;
+      
+      // Try n8n webhook first if enabled
+      if (N8N_CONFIG.enabled) {
+        aiResponse = await callN8nWebhook(currentInput, newContext);
+      }
+      
+      // Fall back to local AI if n8n fails or is disabled
+      if (!aiResponse) {
+        aiResponse = generateAIResponse(currentInput);
+      }
+
+      // Simulate thinking time for better UX
+      const thinkingTime = N8N_CONFIG.enabled ? 2000 : 1500;
+      
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: aiResponse.content,
+          timestamp: new Date(),
+          suggestions: aiResponse.suggestions
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+
+        // Handle trip creation if suggested by n8n
+        if (aiResponse.shouldCreateTrip && aiResponse.tripData) {
+          setTimeout(() => {
+            const tripCreationMessage: Message = {
+              id: (Date.now() + 2).toString(),
+              type: 'ai',
+              content: "🎉 Perfect! I have all the information I need to create your trip. Would you like me to add it to your dashboard?",
+              timestamp: new Date(),
+              suggestions: [
+                "Yes, create the trip!",
+                "Let me review the details first",
+                "I want to modify something"
+              ]
+            };
+            setMessages(prev => [...prev, tripCreationMessage]);
+          }, 1000);
+        } else {
+          // Check for trip creation using local logic
+          checkForTripCreation(currentInput, newContext);
+        }
+      }, thinkingTime);
+      
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+      setIsTyping(false);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: "I apologize, but I'm having some technical difficulties. Let me try to help you with a basic response. Could you tell me more about your travel preferences?",
+        timestamp: new Date(),
+        suggestions: [
+          "I want to visit Europe",
+          "Planning a romantic getaway",
+          "Adventure trip for solo traveler",
+          "Family vacation with kids"
+        ]
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    }
     // Simulate AI thinking time
     setTimeout(() => {
       const aiResponse = generateAIResponse(inputMessage);
@@ -208,11 +401,11 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     }, 1500);
   };
 
-  const checkForTripCreation = (message: string) => {
+  const checkForTripCreation = (message: string, context: any) => {
     // Simple logic to detect if user has provided enough info
-    const hasDestination = /europe|asia|america|africa|australia|paris|london|tokyo|thailand|bali|italy|spain|france|germany|japan|singapore|vietnam|cambodia|india|nepal|peru|brazil|argentina|chile|mexico|canada|usa|new york|california|florida|hawaii/i.test(message);
-    const hasDuration = /\d+\s*(day|week|month)|week|month/i.test(message);
-    const hasBudget = /\$\d+|budget|cheap|expensive|luxury|mid-range/i.test(message);
+    const hasDestination = context.destination || /europe|asia|america|africa|australia|paris|london|tokyo|thailand|bali|italy|spain|france|germany|japan|singapore|vietnam|cambodia|india|nepal|peru|brazil|argentina|chile|mexico|canada|usa|new york|california|florida|hawaii/i.test(message);
+    const hasDuration = context.duration || /\d+\s*(day|week|month)|week|month/i.test(message);
+    const hasBudget = context.budget || /\$\d+|budget|cheap|expensive|luxury|mid-range/i.test(message);
 
     if (hasDestination && (hasDuration || hasBudget)) {
       setTimeout(() => {
@@ -235,30 +428,30 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   const handleSuggestionClick = (suggestion: string) => {
     setInputMessage(suggestion);
-    handleSendMessage();
+    setTimeout(() => handleSendMessage(), 100);
   };
 
   const handleCreateTripFromChat = () => {
-    // Extract information from chat to create trip
-    const chatContent = messages.map(m => m.content).join(' ');
-    
-    // Simple extraction logic (in a real app, you'd use more sophisticated NLP)
+    // Use extracted context to create trip
     const extractedData = {
-      title: "AI Planned Trip",
-      destination: "Europe", // This would be extracted from chat
+      title: `${conversationContext.tripType || 'AI Planned'} Trip to ${conversationContext.destination || 'Amazing Destination'}`,
+      destination: conversationContext.destination || "To be determined",
       start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-      end_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 40 days from now
-      budget: 3000,
-      travelers_count: 2,
-      trip_type: 'leisure',
+      end_date: new Date(Date.now() + (conversationContext.duration?.includes('week') ? 37 : 40) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      budget: conversationContext.budget ? parseFloat(conversationContext.budget) : null,
+      travelers_count: conversationContext.travelers || 1,
+      trip_type: conversationContext.tripType || 'leisure',
       status: 'planning' as const,
       preferences: {
+        ...conversationContext,
         chatHistory: messages,
-        aiGenerated: true
+        aiGenerated: true,
+        n8nEnabled: N8N_CONFIG.enabled
       },
       itinerary: {
         generatedByAI: true,
-        chatSummary: "Trip planned through AI chat assistant"
+        chatSummary: "Trip planned through AI chat assistant",
+        preferences: conversationContext.preferences
       }
     };
 
@@ -286,9 +479,16 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             </div>
             <div>
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
-              <p className="text-blue-100 text-sm">Let's plan your perfect trip together!</p>
+              <p className="text-blue-100 text-sm">
+                {N8N_CONFIG.enabled ? 'Powered by advanced AI workflows' : 'Let\'s plan your perfect trip together!'}
+              </p>
             </div>
           </div>
+          {N8N_CONFIG.enabled && (
+            <div className="text-xs bg-white/10 px-2 py-1 rounded">
+              n8n Connected
+            </div>
+          )}
           <button
             onClick={onClose}
             className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
@@ -353,7 +553,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                 <div className="bg-white border shadow-sm rounded-lg p-4">
                   <div className="flex items-center space-x-2">
                     <Loader className="animate-spin" size={16} />
-                    <p className="text-sm text-gray-600">AI is thinking...</p>
+                    <p className="text-sm text-gray-600">
+                      {N8N_CONFIG.enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -416,6 +618,22 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
               👨‍👩‍👧‍👦 Family
             </button>
           </div>
+          
+          {/* Context Display (for debugging) */}
+          {Object.keys(conversationContext).some(key => conversationContext[key]) && (
+            <div className="mt-2 text-xs text-gray-500">
+              <details>
+                <summary className="cursor-pointer">Detected preferences</summary>
+                <div className="mt-1 bg-gray-50 p-2 rounded text-xs">
+                  {conversationContext.destination && <span className="mr-2">📍 {conversationContext.destination}</span>}
+                  {conversationContext.duration && <span className="mr-2">⏱️ {conversationContext.duration}</span>}
+                  {conversationContext.budget && <span className="mr-2">💰 ${conversationContext.budget}</span>}
+                  {conversationContext.travelers && <span className="mr-2">👥 {conversationContext.travelers}</span>}
+                  {conversationContext.tripType && <span className="mr-2">🎯 {conversationContext.tripType}</span>}
+                </div>
+              </details>
+            </div>
+          )}
         </div>
       </div>
     </div>
