@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Trip } from '../lib/supabase';
 import TripModal from './TripModal';
+import AIChatModal from './AIChatModal';
 
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -34,6 +35,7 @@ const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,6 +45,18 @@ const Dashboard: React.FC = () => {
     setSelectedTrip(null);
     setModalMode('create');
     setShowTripModal(true);
+  };
+
+  const handleAIPlanTrip = () => {
+    setShowAIChat(true);
+  };
+
+  const handleCreateTripFromAI = async (tripData: any) => {
+    const { data, error } = await createTrip(tripData);
+    if (!error) {
+      // Trip created successfully from AI chat
+      console.log('Trip created from AI:', data);
+    }
   };
 
   const handleEditTrip = (trip: Trip) => {
@@ -332,6 +346,7 @@ const Dashboard: React.FC = () => {
               <div className="mt-6">
                 <button
                   onClick={handleCreateTrip}
+                  onClick={handleAIPlanTrip}
                   className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Bot size={20} className="mr-2" />
@@ -433,6 +448,15 @@ const Dashboard: React.FC = () => {
           trip={selectedTrip}
           mode={modalMode}
           onSave={modalMode === 'create' ? createTrip : updateTrip}
+        />
+      )}
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <AIChatModal
+          isOpen={showAIChat}
+          onClose={() => setShowAIChat(false)}
+          onCreateTrip={handleCreateTripFromAI}
         />
       )}
 
