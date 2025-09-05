@@ -57,10 +57,13 @@ const LoginPage: React.FC = () => {
       
       if (result.error) {
         setErrors({ submit: result.error.message });
-      } else if (isSignupMode && result.data?.user && !result.data?.session) {
-        // Handle case where user is created but not automatically signed in
-        setErrors({ submit: 'Account created successfully! Please sign in with your credentials.' });
-        setIsSignupMode(false); // Switch to sign in mode
+      } else if (isSignupMode) {
+        if (result.data?.user && !result.data?.session) {
+          // Handle case where user is created but not automatically signed in
+          setErrors({ submit: 'Account created successfully! You can now sign in with your credentials.' });
+          setIsSignupMode(false); // Switch to sign in mode
+          setFormData(prev => ({ ...prev, password: '' })); // Clear password for security
+        }
       }
     } catch (error) {
       setErrors({ submit: 'An unexpected error occurred' });
