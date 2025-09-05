@@ -57,6 +57,10 @@ const LoginPage: React.FC = () => {
       
       if (result.error) {
         setErrors({ submit: result.error.message });
+      } else if (isSignupMode && result.data?.user && !result.data?.session) {
+        // Handle case where user is created but not automatically signed in
+        setErrors({ submit: 'Account created successfully! Please sign in with your credentials.' });
+        setIsSignupMode(false); // Switch to sign in mode
       }
     } catch (error) {
       setErrors({ submit: 'An unexpected error occurred' });

@@ -35,6 +35,7 @@ export const useAuth = () => {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: undefined, // Disable email confirmation redirect
       },
     });
     return { data, error };
