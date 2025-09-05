@@ -9,7 +9,7 @@ interface FormErrors {
 }
 
 const LoginPage: React.FC = () => {
-  const { signIn, signUp, signInWithProvider } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -93,15 +93,9 @@ const LoginPage: React.FC = () => {
     alert('Forgot password functionality would be implemented here');
   };
 
-  const handleSocialLogin = (provider: 'google' | 'facebook') => {
-    setIsLoading(true);
-    
-    signInWithProvider(provider).then(({ error }) => {
-      setIsLoading(false);
-      if (error) {
-        setErrors({ submit: error.message });
-      }
-    });
+  const handleSocialLogin = (provider: string) => {
+    // Handle social login logic here
+    alert(`${provider} login functionality would be implemented here`);
   };
 
   return (
@@ -246,11 +240,18 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
 
+            {/* Error Message */}
+            {errors.submit && (
+              <div className="bg-red-500/20 border border-red-400 text-red-300 px-4 py-3 rounded-lg">
+                {errors.submit}
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-500 hover:to-orange-600 focus:ring-2 focus:ring-orange-300 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-medium focus:ring-2 focus:ring-orange-300 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -258,13 +259,6 @@ const LoginPage: React.FC = () => {
                 isSignupMode ? 'Create Account' : 'Sign In'
               )}
             </button>
-
-            {/* Error Message */}
-            {errors.submit && (
-              <div className="text-red-300 text-sm text-center bg-red-500/20 backdrop-blur-sm rounded-lg p-3 border border-red-400/30">
-                {errors.submit}
-              </div>
-            )}
 
             {/* Social Login */}
             <div className="text-center mt-8">
