@@ -51,21 +51,23 @@ const LoginPage: React.FC = () => {
       let result;
       if (isSignupMode) {
         result = await signUp(formData.email, formData.password, formData.fullName);
+        
+        if (result.data?.user && !result.error) {
+          // Signup successful - user should be able to sign in immediately
+          setErrors({ submit: 'Account created successfully! You are now signed in.' });
+          // Don't switch modes, let the auth state change handle the redirect
+          return;
+        }
       } else {
         result = await signIn(formData.email, formData.password);
       }
       
       if (result.error) {
-        setErrors({ submit: result.error.message });
-      } else if (isSignupMode) {
-        if (result.data?.user && !result.data?.session) {
-          // Handle case where user is created but not automatically signed in
-          setErrors({ submit: 'Account created successfully! You can now sign in with your credentials.' });
-          setIsSignupMode(false); // Switch to sign in mode
-          setFormData(prev => ({ ...prev, password: '' })); // Clear password for security
-        }
+        console.error('Auth error:', result.error);
+        setErrors({ submit: result.error.message || 'Authentication failed' });
       }
     } catch (error) {
+      console.error('Unexpected auth error:', error);
       setErrors({ submit: 'An unexpected error occurred' });
     } finally {
       setIsLoading(false);

@@ -35,19 +35,8 @@ export const useAuth = () => {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: undefined,
       },
     });
-    
-    // If signup is successful but user needs confirmation, provide clear feedback
-    if (data?.user && !data?.session && !error) {
-      return { 
-        data, 
-        error: { 
-          message: 'Account created! Please check your email to confirm your account, then sign in.' 
-        } 
-      };
-    }
     
     return { data, error };
   };
