@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Plane, MapPin, Compass, Bot } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface FormErrors {
   email?: string;
@@ -7,9 +8,11 @@ interface FormErrors {
 }
 
 const LoginPage: React.FC = () => {
+  const { signIn, signUp, signInWithProvider } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    fullName: '',
     rememberMe: false
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -43,11 +46,22 @@ const LoginPage: React.FC = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      let result;
+      if (isSignupMode) {
+        result = await signUp(formData.email, formData.password, formData.fullName);
+      } else {
+        result = await signIn(formData.email, formData.password);
+      }
+      
+      if (result.error) {
+        setErrors({ submit: result.error.message });
+      }
+    } catch (error) {
+      setErrors({ submit: 'An unexpected error occurred' });
+    } finally {
       setIsLoading(false);
-      console.log('Login attempt:', formData);
-    }, 2000);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,10 +72,11 @@ const LoginPage: React.FC = () => {
     }));
     
     // Clear error when user starts typing
-    if (errors[name as keyof FormErrors]) {
+    if (errors[name as keyof FormErrors] || errors.submit) {
       setErrors(prev => ({
         ...prev,
-        [name]: undefined
+        [name]: undefined,
+        submit: undefined
       }));
     }
   };
@@ -80,12 +95,12 @@ const LoginPage: React.FC = () => {
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     setIsLoading(true);
     
-    // Simulate social login process
-    setTimeout(() => {
+    signInWithProvider(provider).then(({ error }) => {
       setIsLoading(false);
-      const action = isSignupMode ? 'signup' : 'login';
-      alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} ${action} functionality would be implemented here`);
-    }, 1500);
+      if (error) {
+        setErrors({ submit: error.message });
+      }
+    });
   };
 
   return (
@@ -133,6 +148,26 @@ const LoginPage: React.FC = () => {
                 {isSignupMode ? 'Join us to start planning amazing trips' : 'Sign in to plan your next adventure'}
               </p>
             </div>
+
+            {/* Full Name Field (only for signup) */}
+            {isSignupMode && (
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="block text-sm font-medium text-white">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-white placeholder-blue-200 focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Email Field */}
             <div className="space-y-2">
@@ -209,6 +244,12 @@ const LoginPage: React.FC = () => {
                 Forgot password?
               </button>
             </div>
+
+            {errors.submit && (
+              <div className="text-red-300 text-sm text-center bg-red-500/20 backdrop-blur-sm rounded-lg p-3">
+                {errors.submit}
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
