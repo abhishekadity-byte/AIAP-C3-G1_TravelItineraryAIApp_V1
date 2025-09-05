@@ -342,10 +342,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const currentInput = inputMessage;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputMessage,
+      content: currentInput,
       timestamp: new Date()
     };
 
@@ -427,23 +429,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       setMessages(prev => [...prev, errorMessage]);
     }
-    // Simulate AI thinking time
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage);
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: aiResponse.content,
-        timestamp: new Date(),
-        suggestions: aiResponse.suggestions
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-
-      // Check if we have enough information to create a trip
-      checkForTripCreation(inputMessage);
-    }, 1500);
   };
 
   const checkForTripCreation = (message: string, context: any) => {
