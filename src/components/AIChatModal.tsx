@@ -28,7 +28,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       id: '1',
       type: 'ai',
       content: N8N_CONFIG.enabled 
-        ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
+        ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
         : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
       timestamp: new Date(),
       suggestions: [
@@ -50,6 +50,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     tripType: null,
     preferences: []
   });
+  const [n8nStatus, setN8nStatus] = useState<'connected' | 'disconnected' | 'testing'>('disconnected');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -65,8 +66,51 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
+    
+    // Test n8n connection when modal opens
+    if (isOpen && N8N_CONFIG.enabled) {
+      testN8nConnection();
+    }
   }, [isOpen]);
 
+  // Test n8n connection
+  const testN8nConnection = async () => {
+    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+      setN8nStatus('disconnected');
+      return;
+    }
+
+    setN8nStatus('testing');
+    
+    try {
+      const testPayload = {
+        message: "Connection test",
+        context: {},
+        test: true,
+        timestamp: new Date().toISOString()
+      };
+
+      const response = await fetch(N8N_CONFIG.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testPayload),
+        signal: AbortSignal.timeout(5000) // 5 second timeout for test
+      });
+
+      if (response.ok) {
+        setN8nStatus('connected');
+        console.log('✅ n8n connection successful');
+      } else {
+        setN8nStatus('disconnected');
+        console.log('❌ n8n connection failed:', response.status);
+      }
+    } catch (error) {
+      setN8nStatus('disconnected');
+      console.log('❌ n8n connection error:', error);
+    }
+  };
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
@@ -317,12 +361,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       let aiResponse;
       
       // Try n8n webhook first if enabled
-      if (N8N_CONFIG.enabled) {
+      if (N8N_CONFIG.enabled && n8nStatus === 'connected') {
         aiResponse = await callN8nWebhook(currentInput, newContext);
       }
       
       // Fall back to local AI if n8n fails or is disabled
       if (!aiResponse) {
+        console.log('Using local AI fallback');
         aiResponse = generateAIResponse(currentInput);
       }
 
@@ -480,13 +525,20 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             <div>
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
               <p className="text-blue-100 text-sm">
-                {N8N_CONFIG.enabled ? 'Powered by advanced AI workflows' : 'Let\'s plan your perfect trip together!'}
+                {N8N_CONFIG.enabled 
+                  ? `Powered by n8n workflows ${n8nStatus === 'connected' ? '🟢' : n8nStatus === 'testing' ? '🟡' : '🔴'}`
+                  : 'Let\'s plan your perfect trip together!'
+                }
               </p>
             </div>
           </div>
           {N8N_CONFIG.enabled && (
-            <div className="text-xs bg-white/10 px-2 py-1 rounded">
-              n8n Connected
+            <div className={`text-xs px-2 py-1 rounded ${
+              n8nStatus === 'connected' ? 'bg-green-500/20 text-green-100' :
+              n8nStatus === 'testing' ? 'bg-yellow-500/20 text-yellow-100' :
+              'bg-red-500/20 text-red-100'
+            }`}>
+              n8n {n8nStatus === 'connected' ? 'Connected' : n8nStatus === 'testing' ? 'Testing...' : 'Disconnected'}
             </div>
           )}
           <button
