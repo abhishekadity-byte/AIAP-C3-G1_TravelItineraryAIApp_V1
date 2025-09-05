@@ -28,17 +28,32 @@ export const useAuth = () => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
-    
-    return { data, error };
+      });
+      
+      if (error) {
+        console.error('Supabase signup error:', error);
+        return { data: null, error };
+      }
+
+      // If signup was successful, the trigger should have created the profile
+      console.log('Signup successful:', data);
+      return { data, error };
+    } catch (err) {
+      console.error('Unexpected signup error:', err);
+      return { 
+        data: null, 
+        error: { message: 'An unexpected error occurred during signup' } 
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {

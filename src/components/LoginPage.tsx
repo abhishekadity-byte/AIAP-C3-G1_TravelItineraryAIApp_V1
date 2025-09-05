@@ -52,11 +52,22 @@ const LoginPage: React.FC = () => {
       if (isSignupMode) {
         result = await signUp(formData.email, formData.password, formData.fullName);
         
-        if (result.data?.user && !result.error) {
-          // Signup successful - user should be able to sign in immediately
-          setErrors({ submit: 'Account created successfully! You are now signed in.' });
-          // Don't switch modes, let the auth state change handle the redirect
-          return;
+        if (result.error) {
+          console.error('Signup error:', result.error);
+          let errorMessage = result.error.message || 'Signup failed';
+          
+          // Provide more specific error messages
+          if (errorMessage.includes('already registered')) {
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
+          } else if (errorMessage.includes('Database error')) {
+            errorMessage = 'There was a problem creating your account. Please try again.';
+          }
+          
+          setErrors({ submit: errorMessage });
+        } else if (result.data?.user) {
+          // Signup successful
+          console.log('Signup successful, user should be logged in automatically');
+          // The auth state change will handle the redirect to dashboard
         }
       } else {
         result = await signIn(formData.email, formData.password);
