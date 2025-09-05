@@ -93,6 +93,11 @@ const LoginPage: React.FC = () => {
     alert('Forgot password functionality would be implemented here');
   };
 
+  const handleSocialLogin = (provider: string) => {
+    // Handle social login logic here
+    alert(`${provider} login functionality would be implemented here`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Pattern */}
@@ -240,8 +245,24 @@ const LoginPage: React.FC = () => {
               <div className="bg-red-500/20 border border-red-400 text-red-300 px-4 py-3 rounded-lg">
                 {errors.submit}
               </div>
-              </button>
-          <div className="text-center mt-8">
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-medium focus:ring-2 focus:ring-orange-300 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                isSignupMode ? 'Create Account' : 'Sign In'
+              )}
+            </button>
+
+            {/* Social Login */}
+            <div className="text-center mt-8">
+              <button
                 type="button"
                 onClick={() => handleSocialLogin('facebook')}
                 disabled={isLoading}
