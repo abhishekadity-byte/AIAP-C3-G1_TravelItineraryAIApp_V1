@@ -114,6 +114,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+      console.log('❌ n8n not configured properly');
       return null;
     }
 
@@ -127,7 +128,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         sessionId: 'session-' + Date.now() // In real app, maintain session ID
       };
 
-      console.log('Sending to n8n webhook:', payload);
+      console.log('📤 Sending to n8n webhook:', N8N_CONFIG.webhookUrl);
+      console.log('📦 Payload:', payload);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
@@ -136,6 +138,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify(payload),
         signal: controller.signal
@@ -144,11 +147,25 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('❌ n8n webhook HTTP error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log('n8n response:', result);
+      const responseText = await response.text();
+      console.log('📥 Raw n8n response:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse n8n response as JSON:', parseError);
+        console.error('❌ Response text:', responseText);
+        throw new Error('Invalid JSON response from n8n');
+      }
+      
+      console.log('✅ Parsed n8n response:', result);
 
       return {
         content: result.response || result.message || 'I received your message and I\'m processing it.',
@@ -159,13 +176,19 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       };
 
     } catch (error) {
-      console.error('Error calling n8n webhook:', error);
+      console.error('❌ Error calling n8n webhook:', error);
       
       if (error.name === 'AbortError') {
+        console.log('⏰ n8n webhook timeout');
         return {
           content: "I'm taking a bit longer to process your request. Let me give you a quick response while I work on the details.",
           suggestions: ["Tell me more about your preferences", "What's your budget range?", "When do you want to travel?"]
         };
+      }
+      
+      // Log the specific error for debugging
+      if (error.message.includes('Failed to fetch')) {
+        console.error('🌐 Network error - check if n8n URL is accessible');
       }
       
       return null; // Fall back to local AI
@@ -343,6 +366,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     if (!inputMessage.trim()) return;
 
     const currentInput = inputMessage;
+    console.log('🚀 Sending message:', currentInput);
+    console.log('📡 n8n Config:', { 
+      enabled: N8N_CONFIG.enabled, 
+      hasUrl: !!N8N_CONFIG.webhookUrl,
+      status: n8nStatus 
+    });
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -363,8 +392,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       let aiResponse;
       
       // Try n8n webhook first if enabled
-      if (N8N_CONFIG.enabled && n8nStatus === 'connected') {
+      if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
+        console.log('🔄 Attempting n8n webhook call...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
+        
+        if (aiResponse) {
+          console.log('✅ n8n webhook successful:', aiResponse);
+        } else {
+          console.log('❌ n8n webhook failed, falling back to local AI');
+        }
       }
       
       // Fall back to local AI if n8n fails or is disabled
