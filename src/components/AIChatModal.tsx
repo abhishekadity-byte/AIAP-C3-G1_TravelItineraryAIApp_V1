@@ -269,13 +269,14 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       const finalResponse = {
         content: responseContent || 'I received your message and I\'m processing it.',
-        suggestions: result.output?.suggestions || result.suggestions || [],
+        suggestions: result.output?.suggestions || result.suggestions || null,
         context: result.output?.context || result.context || {},
         tripData: result.output?.tripData || result.tripData || null,
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
       console.log('📤 Final response object:', finalResponse);
+      console.log('🔍 Final suggestions:', finalResponse.suggestions);
       console.log('🔍 DEBUG: Returning final response');
       
       return finalResponse;
@@ -522,8 +523,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       if (!aiResponse) {
         console.log('🤖 Using local AI fallback');
         aiResponse = generateAIResponse(currentInput);
+        console.log('🤖 Local AI suggestions:', aiResponse.suggestions);
       } else {
         console.log('🎯 Using n8n response:', aiResponse.content);
+        console.log('🎯 n8n suggestions:', aiResponse.suggestions);
       }
 
       // Add AI response immediately (no artificial delay for n8n responses)
@@ -532,9 +535,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         type: 'ai',
         content: aiResponse.content,
         timestamp: new Date(),
-        suggestions: aiResponse.suggestions
+        suggestions: aiResponse.suggestions || undefined
       };
 
+      console.log('💬 AI Message with suggestions:', aiMessage.suggestions);
       setMessages(prev => [...prev, aiMessage]);
       setIsTyping(false);
 
