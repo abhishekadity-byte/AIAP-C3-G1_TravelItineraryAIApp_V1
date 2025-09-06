@@ -100,6 +100,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
     if (!validateForm()) return;
     
     setLoading(true);
+    setErrors({}); // Clear previous errors
     
     const tripData = {
       ...formData,
@@ -107,14 +108,36 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
     };
     
     try {
-      const { error } = await onSave(mode === 'edit' && trip ? { ...tripData, id: trip.id } : tripData);
-      
-      if (error) {
-        setErrors({ submit: error });
+      let result;
+      if (mode === 'edit' && trip) {
+        // For edit mode, only send the fields that can be updated
+        const updateData = {
+          title: tripData.title,
+          destination: tripData.destination,
+          start_date: tripData.start_date,
+          end_date: tripData.end_date,
+          budget: tripData.budget,
+          travelers_count: tripData.travelers_count,
+          trip_type: tripData.trip_type,
+          status: tripData.status,
+          preferences: tripData.preferences,
+          itinerary: tripData.itinerary
+        };
+        result = await onSave(trip.id, updateData);
       } else {
+        // For create mode, send all data
+        result = await onSave(tripData);
+      }
+      
+      if (result.error) {
+        console.error('Save error:', result.error);
+        setErrors({ submit: result.error });
+      } else {
+        console.log('Trip saved successfully:', result.data);
         onClose();
       }
     } catch (err) {
+      console.error('Unexpected error during save:', err);
       setErrors({ submit: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
