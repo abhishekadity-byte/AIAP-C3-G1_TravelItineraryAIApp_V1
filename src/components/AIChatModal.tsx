@@ -23,22 +23,7 @@ const N8N_CONFIG = {
 };
 
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content: N8N_CONFIG.enabled 
-        ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
-        : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
-      timestamp: new Date(),
-      suggestions: [
-        "I want to visit Europe for 2 weeks",
-        "Plan a romantic getaway",
-        "Adventure trip for solo traveler",
-        "Family vacation with kids"
-      ]
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [tripData, setTripData] = useState<any>({});
@@ -51,8 +36,53 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     preferences: []
   });
   const [n8nStatus, setN8nStatus] = useState<'connected' | 'disconnected' | 'testing'>('disconnected');
+  const [sessionInitialized, setSessionInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Initialize chat session with welcome message
+  const initializeChatSession = () => {
+    if (!sessionInitialized) {
+      const welcomeMessage: Message = {
+        id: '1',
+        type: 'ai',
+        content: N8N_CONFIG.enabled 
+          ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
+          : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
+        timestamp: new Date(),
+        suggestions: [
+          "I want to visit Europe for 2 weeks",
+          "Plan a romantic getaway",
+          "Adventure trip for solo traveler",
+          "Family vacation with kids"
+        ]
+      };
+      
+      setMessages([welcomeMessage]);
+      setSessionInitialized(true);
+      console.log('🎯 Chat session initialized with ID:', sessionIdRef.current);
+    }
+  };
+
+  // Reset session when modal is closed
+  const resetChatSession = () => {
+    setMessages([]);
+    setInputMessage('');
+    setIsTyping(false);
+    setTripData({});
+    setConversationContext({
+      destination: null,
+      duration: null,
+      budget: null,
+      travelers: null,
+      tripType: null,
+      preferences: []
+    });
+    setSessionInitialized(false);
+    sessionIdRef.current = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('🔄 Chat session reset, new session ID:', sessionIdRef.current);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,6 +94,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   useEffect(() => {
     if (isOpen) {
+      // Initialize session when modal opens
+      initializeChatSession();
+      
       if (inputRef.current) {
         inputRef.current.focus();
       }
@@ -74,8 +107,11 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         console.log('🔍 N8N_CONFIG:', N8N_CONFIG);
         testN8nConnection();
       }
+    } else {
+      // Reset session when modal closes
+      resetChatSession();
     }
-  }, [isOpen]);
+  }, [isOpen, sessionInitialized]);
 
   // Test n8n connection
   const testN8nConnection = async () => {
@@ -173,7 +209,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         conversationHistory: messages.slice(-5), // Send last 5 messages for context
         timestamp: new Date().toISOString(),
         userId: 'user-' + Date.now(), // In real app, use actual user ID
-        sessionId: 'session-' + Date.now() // In real app, maintain session ID
+        sessionId: sessionIdRef.current // Use persistent session ID
       };
 
       console.log('📤 Sending to n8n webhook:', N8N_CONFIG.webhookUrl);
@@ -664,7 +700,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
               <p className="text-blue-100 text-sm">
                 {N8N_CONFIG.enabled 
-                  ? `Powered by n8n workflows ${n8nStatus === 'connected' ? '🟢' : n8nStatus === 'testing' ? '🟡' : '🔴'}`
+                  ? `Powered by n8n workflows ${n8nStatus === 'connected' ? '🟢' : n8nStatus === 'testing' ? '🟡' : '🔴'} • Session: ${sessionIdRef.current.split('-')[1]}`
                   : 'Let\'s plan your perfect trip together!'
                 }
               </p>
@@ -813,7 +849,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           {Object.keys(conversationContext).some(key => conversationContext[key]) && (
             <div className="mt-2 text-xs text-gray-500">
               <details>
-                <summary className="cursor-pointer text-white bg-black/30 px-2 py-1 rounded">Detected preferences</summary>
+                <summary className="cursor-pointer text-white bg-black/30 px-2 py-1 rounded">
+                  Detected preferences • Session: {sessionIdRef.current.split('-')[1]}
+                </summary>
                 <div className="mt-1 bg-black/40 p-2 rounded text-xs text-white border border-purple-400/30">
                   {conversationContext.destination && <span className="mr-2">📍 {conversationContext.destination}</span>}
                   {conversationContext.duration && <span className="mr-2">⏱️ {conversationContext.duration}</span>}
