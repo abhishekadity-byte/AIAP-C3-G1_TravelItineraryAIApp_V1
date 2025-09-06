@@ -172,36 +172,61 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         console.error('❌ n8n webhook HTTP error:', response.status, response.statusText);
         const errorText = await response.text();
         console.error('❌ Error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+        return null; // Fall back to local AI instead of throwing
       }
 
       const responseText = await response.text();
       console.log('📥 Raw n8n response:', responseText);
+      console.log('📏 Response length:', responseText.length);
+      console.log('🔍 Response type:', typeof responseText);
       
       let result;
       try {
         result = JSON.parse(responseText);
+        console.log('🎯 Initial parsed result:', result);
+        console.log('📊 Is array?', Array.isArray(result));
         
         // Handle array responses from n8n (extract first item)
         if (Array.isArray(result) && result.length > 0) {
           console.log('📦 n8n returned array, using first item:', result[0]);
+          console.log('📝 First item response field:', result[0].response);
           result = result[0];
+        } else if (Array.isArray(result) && result.length === 0) {
+          console.error('❌ n8n returned empty array');
+          return null;
         }
+        
+        console.log('🔍 Final parsed result:', result);
+        console.log('📝 Response field value:', result.response);
+        console.log('💬 Message field value:', result.message);
+        console.log('📄 Content field value:', result.content);
       } catch (parseError) {
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
         console.error('❌ Response text:', responseText);
-        throw new Error('Invalid JSON response from n8n');
+        return null; // Fall back to local AI
       }
       
       console.log('✅ Parsed n8n response:', result);
+      console.log('💬 Final response content:', result.response);
 
-      return {
-        content: result.response || result.message || result.content || result.text || result.reply || 'I received your message and I\'m processing it.',
+      // Extract the actual response content with detailed logging
+      const responseContent = result.response || result.message || result.content || result.text || result.reply;
+      console.log('🎯 Extracted response content:', responseContent);
+      
+      if (!responseContent) {
+        console.warn('⚠️ No response content found in n8n response, available fields:', Object.keys(result));
+        console.warn('⚠️ Full result object:', JSON.stringify(result, null, 2));
+      }
+      
+      const finalResponse = {
+        content: responseContent || 'I received your message and I\'m processing it.',
         suggestions: result.suggestions || [],
         context: result.context || {},
         tripData: result.tripData || null,
         shouldCreateTrip: result.shouldCreateTrip || false
       };
+      
+      console.log('📤 Final response object:', finalResponse);
 
     } catch (error) {
       console.error('❌ Error calling n8n webhook:', error);
