@@ -129,8 +129,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   };
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
+    console.log('🔍 DEBUG: callN8nWebhook function called');
+    console.log('🔍 DEBUG: N8N_CONFIG:', N8N_CONFIG);
+    console.log('🔍 DEBUG: userMessage:', userMessage);
+    console.log('🔍 DEBUG: context:', context);
+    
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
       console.log('❌ n8n not enabled or URL not configured');
+      console.log('🔍 DEBUG: enabled:', N8N_CONFIG.enabled);
+      console.log('🔍 DEBUG: webhookUrl:', N8N_CONFIG.webhookUrl);
       return null;
     }
     
@@ -152,10 +159,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
       console.log('📤 Sending to n8n webhook:', N8N_CONFIG.webhookUrl);
       console.log('📦 Payload:', payload);
+      console.log('🔍 DEBUG: About to make fetch request...');
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
 
+      console.log('🔍 DEBUG: Making fetch request now...');
       const response = await fetch(N8N_CONFIG.webhookUrl, {
         method: 'POST',
         headers: {
@@ -165,6 +174,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         body: JSON.stringify(payload),
         signal: controller.signal
       });
+      console.log('🔍 DEBUG: Fetch request completed');
+      console.log('🔍 DEBUG: Response status:', response.status);
+      console.log('🔍 DEBUG: Response ok:', response.ok);
 
       clearTimeout(timeoutId);
 
@@ -227,9 +239,16 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       };
       
       console.log('📤 Final response object:', finalResponse);
+      console.log('🔍 DEBUG: Returning final response');
+      
+      return finalResponse;
 
     } catch (error) {
+      console.log('🔍 DEBUG: Caught error in callN8nWebhook');
       console.error('❌ Error calling n8n webhook:', error);
+      console.error('❌ Error name:', error.name);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
       
       if (error.name === 'AbortError') {
         console.log('⏰ n8n webhook timeout');
@@ -445,7 +464,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
         console.log('🔄 Attempting n8n webhook call...');
         console.log('📋 Expected n8n response format: { response: "message", suggestions: [...], context: {...} }');
+        console.log('🔍 DEBUG: About to call callN8nWebhook function');
         aiResponse = await callN8nWebhook(currentInput, newContext);
+        console.log('🔍 DEBUG: callN8nWebhook returned:', aiResponse);
         
         if (aiResponse) {
           console.log('✅ n8n webhook successful:', aiResponse);
