@@ -142,11 +142,14 @@ const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex items-center">
-                <img 
-                  src="/image.png" 
-                  alt="JourneyVerse Logo" 
-                  className="h-10 w-auto mr-4 shadow-lg"
-                />
+                <div className="flex items-center space-x-2 mr-4">
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-2 shadow-lg">
+                    <Plane size={16} className="text-white" />
+                  </div>
+                  <div className="bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-2 shadow-lg">
+                    <Bot size={16} className="text-white" />
+                  </div>
+                </div>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">JourneyVerse</h1>
