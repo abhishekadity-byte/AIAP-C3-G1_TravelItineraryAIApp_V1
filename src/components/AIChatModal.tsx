@@ -181,6 +181,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       let result;
       try {
         result = JSON.parse(responseText);
+        
+        // Handle array responses from n8n (extract first item)
+        if (Array.isArray(result) && result.length > 0) {
+          console.log('📦 n8n returned array, using first item:', result[0]);
+          result = result[0];
+        }
       } catch (parseError) {
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
         console.error('❌ Response text:', responseText);
