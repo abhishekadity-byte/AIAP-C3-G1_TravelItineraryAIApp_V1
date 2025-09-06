@@ -186,7 +186,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
                 errors.title ? 'border-red-500' : 'border-purple-400/30'
               } ${isReadOnly ? 'bg-black/20' : ''}`}
-              placeholder="e.g., Summer Vacation in Europe"
+              placeholder="e.g., Summer Vacati            }
+on in Europe"
             />
             {errors.title && <p className="text-pink-400 text-sm mt-1">{errors.title}</p>}
           </div>
@@ -207,7 +208,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
                 errors.destination ? 'border-red-500' : 'border-purple-400/30'
               } ${isReadOnly ? 'bg-black/20' : ''}`}
-              placeholder="e.g., Paris, France"
+              placeholder="e.g., Paris, France            }
+"
             />
             {errors.destination && <p className="text-pink-400 text-sm mt-1">{errors.destination}</p>}
           </div>
@@ -229,6 +231,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
                   errors.start_date ? 'border-red-500' : 'border-purple-400/30'
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
+              }
               />
               {errors.start_date && <p className="text-pink-400 text-sm mt-1">{errors.start_date}</p>}
             </div>
@@ -247,7 +250,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 disabled={isReadOnly}
                 className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
                   errors.end_date ? 'border-red-500' : 'border-purple-400/30'
-                } ${isReadOnly ? 'bg-black/20' : ''}`}
+                } ${isReadOnly ? 'bg-black/20' : ''              }
+}`}
               />
               {errors.end_date && <p className="text-pink-400 text-sm mt-1">{errors.end_date}</p>}
             </div>
@@ -272,7 +276,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
                 placeholder="e.g., 2000"
                 min="0"
-                step="0.01"
+                step              }
+="0.01"
               />
               {errors.budget && <p className="text-pink-400 text-sm mt-1">{errors.budget}</p>}
             </div>
@@ -295,7 +300,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 min="1"
                 max="20"
                 step="1"
-              />
+                        }
+    />
               {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
             </div>
           </div>
