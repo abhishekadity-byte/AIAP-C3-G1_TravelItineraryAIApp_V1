@@ -70,6 +70,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       // Test n8n connection when modal opens
       if (N8N_CONFIG.enabled) {
+        console.log('🔍 Modal opened, testing n8n connection...');
+        console.log('🔍 N8N_CONFIG:', N8N_CONFIG);
         testN8nConnection();
       }
     }
@@ -77,21 +79,28 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   // Test n8n connection
   const testN8nConnection = async () => {
+    console.log('🧪 testN8nConnection called');
+    console.log('🧪 N8N_CONFIG.enabled:', N8N_CONFIG.enabled);
+    console.log('🧪 N8N_CONFIG.webhookUrl:', N8N_CONFIG.webhookUrl);
+    
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+      console.log('❌ n8n not enabled or no webhook URL');
       setN8nStatus('disconnected');
       return;
     }
     
     // Check for placeholder URL
     if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
+      console.log('❌ n8n URL is still placeholder');
       setN8nStatus('disconnected');
       return;
     }
 
     setN8nStatus('testing');
+    console.log('🔄 Testing n8n connection to:', N8N_CONFIG.webhookUrl);
     
     try {
-      // Use a simple HEAD request or OPTIONS to test connectivity without triggering workflow
+      // Simple test request
       const response = await fetch(N8N_CONFIG.webhookUrl, {
         method: 'POST',
         headers: {
@@ -105,6 +114,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         signal: AbortSignal.timeout(5000) // 5 second timeout for test
       });
 
+      console.log('🧪 Test response status:', response.status);
+      console.log('🧪 Test response ok:', response.ok);
+      
       // Accept any response that's not a network error
       // n8n webhooks might return various status codes but still be working
       if (response.status < 500) {
@@ -115,6 +127,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         console.log('❌ n8n connection failed with server error:', response.status);
       }
     } catch (error) {
+      console.log('🧪 Test connection error:', error);
       // Only mark as disconnected for actual network errors
       if (error.name === 'AbortError') {
         setN8nStatus('disconnected');
@@ -135,6 +148,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     console.log('🔍 DEBUG: N8N_CONFIG:', N8N_CONFIG);
     console.log('🔍 DEBUG: userMessage:', userMessage);
     console.log('🔍 DEBUG: context:', context);
+    console.log('🔍 DEBUG: n8nStatus:', n8nStatus);
     
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
       console.log('❌ n8n not enabled or URL not configured');
@@ -148,6 +162,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('❌ n8n not configured properly');
       return null;
     }
+
+    // Don't check connection status - just try to call
+    console.log('🚀 Proceeding with n8n webhook call regardless of status');
 
     try {
       const payload = {
@@ -441,6 +458,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     console.log('📡 n8n Config:', { 
       enabled: N8N_CONFIG.enabled, 
       hasUrl: !!N8N_CONFIG.webhookUrl,
+      webhookUrl: N8N_CONFIG.webhookUrl,
       status: n8nStatus 
     });
 
@@ -478,6 +496,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         }
       } else {
         console.log('ℹ️ n8n not enabled or URL not configured, using local AI');
+        console.log('ℹ️ N8N_CONFIG.enabled:', N8N_CONFIG.enabled);
+        console.log('ℹ️ N8N_CONFIG.webhookUrl:', N8N_CONFIG.webhookUrl);
       }
       
       // Fall back to local AI if n8n fails or is disabled
