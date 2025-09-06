@@ -633,7 +633,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
           <div className="flex items-center">
             <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 mr-3">
               <Bot size={24} className="text-white" />
@@ -650,8 +650,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           </div>
           {N8N_CONFIG.enabled && (
             <div className={`text-xs px-2 py-1 rounded ${
-              n8nStatus === 'connected' ? 'bg-green-500/20 text-green-100' :
-              n8nStatus === 'testing' ? 'bg-yellow-500/20 text-yellow-100' :
+              n8nStatus === 'connected' ? 'bg-purple-500/20 text-purple-100' :
+              n8nStatus === 'testing' ? 'bg-pink-500/20 text-pink-100' :
               'bg-red-500/20 text-red-100'
             }`}>
               n8n {n8nStatus === 'connected' ? 'Connected' : n8nStatus === 'testing' ? 'Testing...' : 'Disconnected'}
@@ -666,25 +666,25 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-br from-purple-900/50 via-purple-800/50 to-pink-900/50">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`flex items-start space-x-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                   message.type === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+                    : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg'
                 }`}>
                   {message.type === 'user' ? <User size={16} /> : <Bot size={16} />}
                 </div>
                 <div className={`rounded-lg p-4 ${
                   message.type === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white border shadow-sm'
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+                    : 'bg-black/40 backdrop-blur-xl border border-purple-500/30 text-white shadow-lg'
                 }`}>
                   <p className="text-sm leading-relaxed">{message.content}</p>
                   <p className={`text-xs mt-2 ${
-                    message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    message.type === 'user' ? 'text-purple-100' : 'text-purple-300'
                   }`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -692,13 +692,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                   {/* Suggestions */}
                   {message.suggestions && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-xs text-gray-600 font-medium">Quick suggestions:</p>
+                      <p className="text-xs text-purple-300 font-medium">Quick suggestions:</p>
                       <div className="flex flex-wrap gap-2">
                         {message.suggestions.map((suggestion, index) => (
                           <button
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="text-xs px-3 py-1 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors border border-blue-200"
+                            className="text-xs px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full hover:bg-purple-500/30 transition-colors border border-purple-400/30"
                           >
                             {suggestion}
                           </button>
@@ -715,13 +715,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           {isTyping && (
             <div className="flex justify-start">
               <div className="flex items-start space-x-3 max-w-[80%]">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white flex items-center justify-center shadow-lg">
                   <Bot size={16} />
                 </div>
-                <div className="bg-white border shadow-sm rounded-lg p-4">
+                <div className="bg-black/40 backdrop-blur-xl border border-purple-500/30 shadow-lg rounded-lg p-4">
                   <div className="flex items-center space-x-2">
-                    <Loader className="animate-spin" size={16} />
-                    <p className="text-sm text-gray-600">
+                    <Loader className="animate-spin text-purple-400" size={16} />
+                    <p className="text-sm text-purple-200">
                       {N8N_CONFIG.enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
                     </p>
                   </div>
@@ -734,7 +734,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         </div>
 
         {/* Input */}
-        <div className="border-t p-4 bg-white rounded-b-lg">
+        <div className="border-t border-purple-500/30 p-4 bg-black/20 backdrop-blur-xl rounded-b-lg">
           <div className="flex items-center space-x-3">
             <div className="flex-1 relative">
               <input
@@ -744,15 +744,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Tell me about your dream trip..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent pr-12"
                 disabled={isTyping}
               />
-              <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400" size={20} />
             </div>
             <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isTyping}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               <Send size={20} />
             </button>
@@ -762,26 +762,26 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => handleSuggestionClick("I want to visit Europe for 2 weeks")}
-              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+              className="text-xs px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full hover:bg-purple-500/30 transition-colors border border-purple-400/30"
             >
               <MapPin size={12} className="inline mr-1" />
               Europe Trip
             </button>
             <button
               onClick={() => handleSuggestionClick("Plan a romantic getaway for 2 people")}
-              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+              className="text-xs px-3 py-1 bg-pink-500/20 text-pink-200 rounded-full hover:bg-pink-500/30 transition-colors border border-pink-400/30"
             >
               💕 Romantic
             </button>
             <button
               onClick={() => handleSuggestionClick("Adventure trip for solo traveler")}
-              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+              className="text-xs px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full hover:bg-purple-500/30 transition-colors border border-purple-400/30"
             >
               🏔️ Adventure
             </button>
             <button
               onClick={() => handleSuggestionClick("Family vacation with kids")}
-              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+              className="text-xs px-3 py-1 bg-pink-500/20 text-pink-200 rounded-full hover:bg-pink-500/30 transition-colors border border-pink-400/30"
             >
               👨‍👩‍👧‍👦 Family
             </button>
@@ -791,8 +791,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           {Object.keys(conversationContext).some(key => conversationContext[key]) && (
             <div className="mt-2 text-xs text-gray-500">
               <details>
-                <summary className="cursor-pointer">Detected preferences</summary>
-                <div className="mt-1 bg-gray-50 p-2 rounded text-xs">
+                <summary className="cursor-pointer text-purple-300">Detected preferences</summary>
+                <div className="mt-1 bg-purple-500/10 p-2 rounded text-xs text-purple-200">
                   {conversationContext.destination && <span className="mr-2">📍 {conversationContext.destination}</span>}
                   {conversationContext.duration && <span className="mr-2">⏱️ {conversationContext.duration}</span>}
                   {conversationContext.budget && <span className="mr-2">💰 ${conversationContext.budget}</span>}

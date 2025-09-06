@@ -127,14 +127,14 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
   const title = mode === 'create' ? 'Create New Trip' : mode === 'edit' ? 'Edit Trip' : 'Trip Details';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+      <div className="bg-gradient-to-br from-purple-900/95 via-purple-800/95 to-pink-900/95 backdrop-blur-xl rounded-lg shadow-2xl border border-purple-500/30 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between p-6 border-b border-purple-500/30">
+          <h2 className="text-xl font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-purple-300 hover:text-white transition-colors"
           >
             <X size={24} />
           </button>
@@ -144,7 +144,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Trip Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-purple-200 mb-2">
               Trip Title
             </label>
             <input
@@ -154,18 +154,18 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               value={formData.title}
               onChange={handleInputChange}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              } ${isReadOnly ? 'bg-gray-50' : ''}`}
+              className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                errors.title ? 'border-red-500' : 'border-purple-400/30'
+              } ${isReadOnly ? 'bg-black/20' : ''}`}
               placeholder="e.g., Summer Vacation in Europe"
             />
-            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+            {errors.title && <p className="text-pink-400 text-sm mt-1">{errors.title}</p>}
           </div>
 
           {/* Destination */}
           <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-2">
-              <MapPin size={16} className="inline mr-1" />
+            <label htmlFor="destination" className="block text-sm font-medium text-purple-200 mb-2">
+              <MapPin size={16} className="inline mr-1 text-purple-300" />
               Destination
             </label>
             <input
@@ -175,19 +175,19 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               value={formData.destination}
               onChange={handleInputChange}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.destination ? 'border-red-500' : 'border-gray-300'
-              } ${isReadOnly ? 'bg-gray-50' : ''}`}
+              className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                errors.destination ? 'border-red-500' : 'border-purple-400/30'
+              } ${isReadOnly ? 'bg-black/20' : ''}`}
               placeholder="e.g., Paris, France"
             />
-            {errors.destination && <p className="text-red-500 text-sm mt-1">{errors.destination}</p>}
+            {errors.destination && <p className="text-pink-400 text-sm mt-1">{errors.destination}</p>}
           </div>
 
           {/* Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar size={16} className="inline mr-1" />
+              <label htmlFor="start_date" className="block text-sm font-medium text-purple-200 mb-2">
+                <Calendar size={16} className="inline mr-1 text-purple-300" />
                 Start Date
               </label>
               <input
@@ -197,16 +197,16 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.start_date}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.start_date ? 'border-red-500' : 'border-gray-300'
-                } ${isReadOnly ? 'bg-gray-50' : ''}`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  errors.start_date ? 'border-red-500' : 'border-purple-400/30'
+                } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
-              {errors.start_date && <p className="text-red-500 text-sm mt-1">{errors.start_date}</p>}
+              {errors.start_date && <p className="text-pink-400 text-sm mt-1">{errors.start_date}</p>}
             </div>
             
             <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar size={16} className="inline mr-1" />
+              <label htmlFor="end_date" className="block text-sm font-medium text-purple-200 mb-2">
+                <Calendar size={16} className="inline mr-1 text-purple-300" />
                 End Date
               </label>
               <input
@@ -216,19 +216,19 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.end_date}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.end_date ? 'border-red-500' : 'border-gray-300'
-                } ${isReadOnly ? 'bg-gray-50' : ''}`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  errors.end_date ? 'border-red-500' : 'border-purple-400/30'
+                } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
-              {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>}
+              {errors.end_date && <p className="text-pink-400 text-sm mt-1">{errors.end_date}</p>}
             </div>
           </div>
 
           {/* Budget and Travelers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
-                <DollarSign size={16} className="inline mr-1" />
+              <label htmlFor="budget" className="block text-sm font-medium text-purple-200 mb-2">
+                <DollarSign size={16} className="inline mr-1 text-purple-300" />
                 Budget (Optional)
               </label>
               <input
@@ -238,19 +238,19 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.budget}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.budget ? 'border-red-500' : 'border-gray-300'
-                } ${isReadOnly ? 'bg-gray-50' : ''}`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  errors.budget ? 'border-red-500' : 'border-purple-400/30'
+                } ${isReadOnly ? 'bg-black/20' : ''}`}
                 placeholder="e.g., 2000"
                 min="0"
                 step="0.01"
               />
-              {errors.budget && <p className="text-red-500 text-sm mt-1">{errors.budget}</p>}
+              {errors.budget && <p className="text-pink-400 text-sm mt-1">{errors.budget}</p>}
             </div>
             
             <div>
-              <label htmlFor="travelers_count" className="block text-sm font-medium text-gray-700 mb-2">
-                <Users size={16} className="inline mr-1" />
+              <label htmlFor="travelers_count" className="block text-sm font-medium text-purple-200 mb-2">
+                <Users size={16} className="inline mr-1 text-purple-300" />
                 Number of Travelers
               </label>
               <input
@@ -260,20 +260,20 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.travelers_count}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.travelers_count ? 'border-red-500' : 'border-gray-300'
-                } ${isReadOnly ? 'bg-gray-50' : ''}`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  errors.travelers_count ? 'border-red-500' : 'border-purple-400/30'
+                } ${isReadOnly ? 'bg-black/20' : ''}`}
                 min="1"
               />
-              {errors.travelers_count && <p className="text-red-500 text-sm mt-1">{errors.travelers_count}</p>}
+              {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
             </div>
           </div>
 
           {/* Trip Type and Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="trip_type" className="block text-sm font-medium text-gray-700 mb-2">
-                <Plane size={16} className="inline mr-1" />
+              <label htmlFor="trip_type" className="block text-sm font-medium text-purple-200 mb-2">
+                <Plane size={16} className="inline mr-1 text-purple-300" />
                 Trip Type
               </label>
               <select
@@ -282,9 +282,9 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.trip_type}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isReadOnly ? 'bg-gray-50' : ''
-                } border-gray-300`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  isReadOnly ? 'bg-black/20' : ''
+                } border-purple-400/30`}
               >
                 <option value="leisure">Leisure</option>
                 <option value="business">Business</option>
@@ -296,7 +296,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
             </div>
             
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="status" className="block text-sm font-medium text-purple-200 mb-2">
                 Status
               </label>
               <select
@@ -305,9 +305,9 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 value={formData.status}
                 onChange={handleInputChange}
                 disabled={isReadOnly}
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isReadOnly ? 'bg-gray-50' : ''
-                } border-gray-300`}
+                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
+                  isReadOnly ? 'bg-black/20' : ''
+                } border-purple-400/30`}
               >
                 <option value="planning">Planning</option>
                 <option value="confirmed">Confirmed</option>
@@ -317,23 +317,23 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
           </div>
 
           {errors.submit && (
-            <div className="text-red-500 text-sm">{errors.submit}</div>
+            <div className="text-pink-400 text-sm">{errors.submit}</div>
           )}
 
           {/* Actions */}
           {!isReadOnly && (
-            <div className="flex justify-end space-x-3 pt-4 border-t">
+            <div className="flex justify-end space-x-3 pt-4 border-t border-purple-500/30">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                className="px-4 py-2 text-purple-200 bg-purple-500/20 hover:bg-purple-500/30 rounded-md transition-colors border border-purple-400/30"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
                 {loading ? (
                   <div className="flex items-center">
