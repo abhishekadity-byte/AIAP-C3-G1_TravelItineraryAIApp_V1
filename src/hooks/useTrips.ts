@@ -53,17 +53,32 @@ export const useTrips = () => {
 
   const updateTrip = async (id: string, updates: Partial<Trip>) => {
     try {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
       const { data, error } = await supabase
         .from('trips')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ 
+          ...updates, 
+          updated_at: new Date().toISOString(),
+          user_id: user.id // Ensure user_id is always included
+        })
         .eq('id', id)
+        .eq('user_id', user.id) // Additional security check
         .select()
         .single();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('No data returned from update operation');
+      }
+      
       setTrips(prev => prev.map(trip => trip.id === id ? data : trip));
       return { data, error: null };
     } catch (err) {
+      console.error('Error updating trip:', err);
       const error = err instanceof Error ? err.message : 'An error occurred';
       return { data: null, error };
     }
