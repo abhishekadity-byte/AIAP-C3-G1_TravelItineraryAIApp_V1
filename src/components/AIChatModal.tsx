@@ -63,13 +63,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-    
-    // Test n8n connection when modal opens
-    if (isOpen && N8N_CONFIG.enabled) {
-      testN8nConnection();
+    if (isOpen) {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      
+      // Test n8n connection when modal opens
+      if (N8N_CONFIG.enabled) {
+        testN8nConnection();
+      }
     }
   }, [isOpen]);
 
