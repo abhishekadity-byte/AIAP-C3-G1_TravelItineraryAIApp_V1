@@ -766,15 +766,15 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Tell me about your dream trip..."
-                className="w-full px-4 py-3 bg-white/10 border border-purple-400/30 rounded-lg text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent pr-12"
+                className="w-full px-4 py-3 bg-white/90 border border-purple-300 rounded-lg text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white pr-12 shadow-lg"
                 disabled={isTyping}
               />
-              <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400" size={20} />
+              <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500" size={20} />
             </div>
             <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isTyping}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
               <Send size={20} />
             </button>
@@ -784,26 +784,26 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() => handleSuggestionClick("I want to visit Europe for 2 weeks")}
-              className="text-xs px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full hover:bg-purple-500/30 transition-colors border border-purple-400/30"
+              className="text-xs px-3 py-2 bg-white/90 text-purple-700 rounded-full hover:bg-white hover:text-purple-800 transition-colors border border-purple-300 shadow-md hover:shadow-lg font-medium"
             >
               <MapPin size={12} className="inline mr-1" />
               Europe Trip
             </button>
             <button
               onClick={() => handleSuggestionClick("Plan a romantic getaway for 2 people")}
-              className="text-xs px-3 py-1 bg-pink-500/20 text-pink-200 rounded-full hover:bg-pink-500/30 transition-colors border border-pink-400/30"
+              className="text-xs px-3 py-2 bg-white/90 text-pink-700 rounded-full hover:bg-white hover:text-pink-800 transition-colors border border-pink-300 shadow-md hover:shadow-lg font-medium"
             >
               💕 Romantic
             </button>
             <button
               onClick={() => handleSuggestionClick("Adventure trip for solo traveler")}
-              className="text-xs px-3 py-1 bg-purple-500/20 text-purple-200 rounded-full hover:bg-purple-500/30 transition-colors border border-purple-400/30"
+              className="text-xs px-3 py-2 bg-white/90 text-purple-700 rounded-full hover:bg-white hover:text-purple-800 transition-colors border border-purple-300 shadow-md hover:shadow-lg font-medium"
             >
               🏔️ Adventure
             </button>
             <button
               onClick={() => handleSuggestionClick("Family vacation with kids")}
-              className="text-xs px-3 py-1 bg-pink-500/20 text-pink-200 rounded-full hover:bg-pink-500/30 transition-colors border border-pink-400/30"
+              className="text-xs px-3 py-2 bg-white/90 text-pink-700 rounded-full hover:bg-white hover:text-pink-800 transition-colors border border-pink-300 shadow-md hover:shadow-lg font-medium"
             >
               👨‍👩‍👧‍👦 Family
             </button>
@@ -813,8 +813,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           {Object.keys(conversationContext).some(key => conversationContext[key]) && (
             <div className="mt-2 text-xs text-gray-500">
               <details>
-                <summary className="cursor-pointer text-purple-300">Detected preferences</summary>
-                <div className="mt-1 bg-purple-500/10 p-2 rounded text-xs text-purple-200">
+                <summary className="cursor-pointer text-white bg-black/30 px-2 py-1 rounded">Detected preferences</summary>
+                <div className="mt-1 bg-black/40 p-2 rounded text-xs text-white border border-purple-400/30">
                   {conversationContext.destination && <span className="mr-2">📍 {conversationContext.destination}</span>}
                   {conversationContext.duration && <span className="mr-2">⏱️ {conversationContext.duration}</span>}
                   {conversationContext.budget && <span className="mr-2">💰 ${conversationContext.budget}</span>}
