@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
             </div>
             <button
               onClick={handleCreateTrip}
-              className="bg-white text-purple-600 px-6 py-3 rounded-lg font-medium hover:bg-purple-50 transition-colors flex items-center shadow-lg"
+              onClick={handleAIPlanTrip}
             >
               <Bot size={20} className="mr-2" />
               Plan with AI
@@ -347,7 +347,6 @@ const Dashboard: React.FC = () => {
               )}
               <div className="mt-6">
                 <button
-                  onClick={handleCreateTrip}
                   onClick={handleAIPlanTrip}
                   className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 transition-colors shadow-lg"
                 >
