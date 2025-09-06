@@ -100,27 +100,51 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
     if (!validateForm()) return;
     
     setLoading(true);
+    setErrors({}); // Clear previous errors
     
     const tripData = {
-      // Clean the updates object to remove any undefined values
-          ...cleanUpdates, 
-        Object.entries(updates).filter(([_, value]) => value !== undefined)
-          // Don't include user_id in updates as it shouldn't change
-
       ...formData,
       budget: formData.budget ? parseFloat(formData.budget) : null
     };
     
     try {
-      const { error } = await onSave(mode === 'edit' && trip ? { ...tripData, id: trip.id } : tripData);
-      
-      if (error) {
-        setErrors({ submit: error });
+      let result;
+      if (mode === 'edit' && trip) {
+        // For edit mode, only send the fields that can be updated
+        const updateData = {
+          title: tripData.title,
+          destination: tripData.destination,
+          start_date: tripData.start_date,
+          end_date: tripData.end_date,
+          budget: tripData.budget,
+          travelers_count: tripData.travelers_count,
+          trip_type: tripData.trip_type,
+          status: tripData.status,
+          preferences: tripData.preferences,
+          itinerary: tripData.itinerary
+        };
+        console.log('Updating trip with data:', updateData);
+        result = await onSave(trip.id, updateData);
       } else {
+        // For create mode, send all data
+        console.log('Creating trip with data:', tripData);
+        result = await onSave(tripData);
+      }
+      
+      console.log('Clean updates:', cleanUpdates);
+      
+      if (result.error) {
+        console.error('Save error:', result.error);
+        setErrors({ submit: result.error });
+      } else {
+      console.log('Trip updated successfully:', data);
+      
+        console.log('Trip saved successfully:', result.data);
         onClose();
       }
     } catch (err) {
-      setErrors({ submit: 'An unexpected error occurred' });
+      console.error('Unexpected error during save:', err);
+      setErrors({ submit: err instanceof Error ? err.message : 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -165,7 +189,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               placeholder="e.g., Summer Vacation in Europe"
             />
             {errors.title && <p className="text-pink-400 text-sm mt-1">{errors.title}</p>}
-            }
           </div>
 
           {/* Destination */}
@@ -187,7 +210,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               placeholder="e.g., Paris, France"
             />
             {errors.destination && <p className="text-pink-400 text-sm mt-1">{errors.destination}</p>}
-            }
           </div>
 
           {/* Dates */}
@@ -209,7 +231,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
               {errors.start_date && <p className="text-pink-400 text-sm mt-1">{errors.start_date}</p>}
-              }
             </div>
             
             <div>
@@ -229,7 +250,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
               {errors.end_date && <p className="text-pink-400 text-sm mt-1">{errors.end_date}</p>}
-              }
             </div>
           </div>
 
@@ -255,7 +275,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 step="0.01"
               />
               {errors.budget && <p className="text-pink-400 text-sm mt-1">{errors.budget}</p>}
-              }
             </div>
             
             <div>
@@ -274,9 +293,10 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                   errors.travelers_count ? 'border-red-500' : 'border-purple-400/30'
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
                 min="1"
+                max="20"
+                step="1"
               />
               {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
-              }
             </div>
           </div>
 

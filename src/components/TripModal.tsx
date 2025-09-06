@@ -123,9 +123,11 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
           preferences: tripData.preferences,
           itinerary: tripData.itinerary
         };
+        console.log('Updating trip with data:', updateData);
         result = await onSave(trip.id, updateData);
       } else {
         // For create mode, send all data
+        console.log('Creating trip with data:', tripData);
         result = await onSave(tripData);
       }
       
@@ -138,7 +140,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
       }
     } catch (err) {
       console.error('Unexpected error during save:', err);
-      setErrors({ submit: 'An unexpected error occurred' });
+      setErrors({ submit: err instanceof Error ? err.message : 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -287,6 +289,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                   errors.travelers_count ? 'border-red-500' : 'border-purple-400/30'
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
                 min="1"
+                max="20"
+                step="1"
               />
               {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
             </div>
