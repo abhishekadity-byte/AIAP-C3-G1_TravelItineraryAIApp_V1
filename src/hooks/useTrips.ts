@@ -165,6 +165,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               placeholder="e.g., Summer Vacation in Europe"
             />
             {errors.title && <p className="text-pink-400 text-sm mt-1">{errors.title}</p>}
+            }
           </div>
 
           {/* Destination */}
@@ -186,6 +187,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
               placeholder="e.g., Paris, France"
             />
             {errors.destination && <p className="text-pink-400 text-sm mt-1">{errors.destination}</p>}
+            }
           </div>
 
           {/* Dates */}
@@ -207,6 +209,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
               {errors.start_date && <p className="text-pink-400 text-sm mt-1">{errors.start_date}</p>}
+              }
             </div>
             
             <div>
@@ -226,6 +229,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 } ${isReadOnly ? 'bg-black/20' : ''}`}
               />
               {errors.end_date && <p className="text-pink-400 text-sm mt-1">{errors.end_date}</p>}
+              }
             </div>
           </div>
 
@@ -251,6 +255,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 step="0.01"
               />
               {errors.budget && <p className="text-pink-400 text-sm mt-1">{errors.budget}</p>}
+              }
             </div>
             
             <div>
@@ -271,6 +276,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
                 min="1"
               />
               {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
+              }
             </div>
           </div>
 
