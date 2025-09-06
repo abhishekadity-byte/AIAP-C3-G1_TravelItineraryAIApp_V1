@@ -143,12 +143,11 @@ const LoginPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 mr-3 shadow-lg">
-              <Plane size={32} className="text-white" />
-            </div>
-            <div className="bg-gradient-to-r from-pink-500 to-purple-500 rounded-full p-3 shadow-lg">
-              <Bot size={32} className="text-white" />
-            </div>
+            <img 
+              src="/image.png" 
+              alt="JourneyVerse Logo" 
+              className="h-16 w-auto shadow-lg"
+            />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">JourneyVerse</h1>
           <p className="text-purple-200 text-lg">Your Perfect Journey Starts Here</p>
