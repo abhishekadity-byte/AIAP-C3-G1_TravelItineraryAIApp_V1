@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Wanderwise</h1>
+                <h1 className="text-2xl font-bold text-white">JourneyVerse</h1>
                 <p className="text-sm text-purple-200">Your Perfect Journey Starts Here</p>
               </div>
             </div>

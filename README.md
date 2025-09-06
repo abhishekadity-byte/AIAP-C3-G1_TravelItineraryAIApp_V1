@@ -1,4 +1,4 @@
-# Wanderwise - AI Travel Itinerary App
+# JourneyVerse - AI Travel Itinerary App
 
 An AI-powered travel planning application that helps users create personalized travel itineraries through intelligent conversation.
 
@@ -24,7 +24,7 @@ An AI-powered travel planning application that helps users create personalized t
 
 ```bash
 git clone <repository-url>
-cd wanderwise
+cd journeyverse
 npm install
 ```
 
@@ -40,6 +40,10 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 # Optional: n8n Integration
 VITE_N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/travel-chat
 VITE_N8N_ENABLED=true
+
+# Other Configuration
+VITE_APP_NAME=JourneyVerse
+VITE_APP_VERSION=1.0.0
 ```
 
 ### 3. Supabase Setup
