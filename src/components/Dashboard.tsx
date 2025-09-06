@@ -1,382 +1,289 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, Calendar, Users, DollarSign, Plane } from 'lucide-react';
+import { Plus, LogOut, Bot, MapPin, Calendar, Users, DollarSign, Edit, Trash2, Eye, Plane } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useTrips } from '../hooks/useTrips';
+import AIChatModal from './AIChatModal';
+import TripModal from './TripModal';
 import { Trip } from '../lib/supabase';
 
-interface TripModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  trip?: Trip | null;
-  mode: 'create' | 'edit' | 'view';
-  onSave: (tripData: any) => Promise<{ data: any; error: string | null }>;
-}
+const Dashboard: React.FC = () => {
+  const { user, signOut } = useAuth();
+  const { trips, loading, createTrip, updateTrip, deleteTrip } = useTrips();
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showTripModal, setShowTripModal] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
 
-const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSave }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    destination: '',
-    start_date: '',
-    end_date: '',
-    budget: '',
-    travelers_count: 1,
-    trip_type: 'leisure',
-    status: 'planning' as const,
-    preferences: {},
-    itinerary: {}
-  });
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
-  useEffect(() => {
-    if (trip && (mode === 'edit' || mode === 'view')) {
-      setFormData({
-        title: trip.title,
-        destination: trip.destination,
-        start_date: trip.start_date,
-        end_date: trip.end_date,
-        budget: trip.budget?.toString() || '',
-        travelers_count: trip.travelers_count,
-        trip_type: trip.trip_type,
-        status: trip.status,
-        preferences: trip.preferences || {},
-        itinerary: trip.itinerary || {}
-      });
-    } else if (mode === 'create') {
-      setFormData({
-        title: '',
-        destination: '',
-        start_date: '',
-        end_date: '',
-        budget: '',
-        travelers_count: 1,
-        trip_type: 'leisure',
-        status: 'planning',
-        preferences: {},
-        itinerary: {}
-      });
-    }
-  }, [trip, mode]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'travelers_count' ? parseInt(value) || 1 : value
-    }));
+  const handleCreateTrip = (tripData: any) => {
+    setSelectedTrip(null);
+    setModalMode('create');
+    setShowTripModal(true);
     
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    // If coming from AI chat, pre-fill the modal
+    if (tripData) {
+      // The modal will handle the pre-filled data
     }
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.destination.trim()) newErrors.destination = 'Destination is required';
-    if (!formData.start_date) newErrors.start_date = 'Start date is required';
-    if (!formData.end_date) newErrors.end_date = 'End date is required';
-    
-    if (formData.start_date && formData.end_date) {
-      if (new Date(formData.start_date) >= new Date(formData.end_date)) {
-        newErrors.end_date = 'End date must be after start date';
+  const handleEditTrip = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setModalMode('edit');
+    setShowTripModal(true);
+  };
+
+  const handleViewTrip = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setModalMode('view');
+    setShowTripModal(true);
+  };
+
+  const handleDeleteTrip = async (trip: Trip) => {
+    if (window.confirm(`Are you sure you want to delete "${trip.title}"?`)) {
+      const result = await deleteTrip(trip.id);
+      if (result.error) {
+        alert('Failed to delete trip: ' + result.error);
       }
     }
-    
-    if (formData.travelers_count < 1) {
-      newErrors.travelers_count = 'At least 1 traveler is required';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setLoading(true);
-    setErrors({}); // Clear previous errors
-    
-    const tripData = {
-      ...formData,
-      budget: formData.budget ? parseFloat(formData.budget) : null
-    };
-    
+  const handleSaveTrip = async (tripDataOrId: any, updateData?: any) => {
     try {
       let result;
-      if (mode === 'edit' && trip) {
-        // For edit mode, only send the fields that can be updated
-        const updateData = {
-          title: tripData.title,
-          destination: tripData.destination,
-          start_date: tripData.start_date,
-          end_date: tripData.end_date,
-          budget: tripData.budget,
-          travelers_count: tripData.travelers_count,
-          trip_type: tripData.trip_type,
-          status: tripData.status,
-          preferences: tripData.preferences,
-          itinerary: tripData.itinerary
-        };
-        console.log('Updating trip with data:', updateData);
-        result = await onSave(trip.id, updateData);
-      } else {
-        // For create mode, send all data
-        console.log('Creating trip with data:', tripData);
-        result = await onSave(tripData);
+      if (modalMode === 'create') {
+        result = await createTrip(tripDataOrId);
+      } else if (modalMode === 'edit' && updateData) {
+        result = await updateTrip(tripDataOrId, updateData);
       }
       
-      if (result.error) {
-        console.error('Save error:', result.error);
-        setErrors({ submit: result.error });
-      } else {
-        console.log('Trip saved successfully:', result.data);
-        onClose();
+      if (result?.error) {
+        return { data: null, error: result.error };
       }
-    } catch (err) {
-      console.error('Unexpected error during save:', err);
-      setErrors({ submit: err instanceof Error ? err.message : 'An unexpected error occurred' });
-    } finally {
-      setLoading(false);
+      
+      setShowTripModal(false);
+      return { data: result?.data, error: null };
+    } catch (error) {
+      console.error('Error saving trip:', error);
+      return { data: null, error: error instanceof Error ? error.message : 'Failed to save trip' };
     }
   };
 
-  if (!isOpen) return null;
+  const handleCreateTripFromAI = (tripData: any) => {
+    setShowAIChat(false);
+    // Create the trip directly from AI data
+    createTrip(tripData);
+  };
 
-  const isReadOnly = mode === 'view';
-  const title = mode === 'create' ? 'Create New Trip' : mode === 'edit' ? 'Edit Trip' : 'Trip Details';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'planning': return 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30';
+      case 'confirmed': return 'bg-green-500/20 text-green-300 border-green-400/30';
+      case 'completed': return 'bg-blue-500/20 text-blue-300 border-blue-400/30';
+      default: return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
+    }
+  };
+
+  const getTripTypeIcon = (type: string) => {
+    switch (type) {
+      case 'business': return '💼';
+      case 'adventure': return '🏔️';
+      case 'family': return '👨‍👩‍👧‍👦';
+      case 'romantic': return '💕';
+      case 'solo': return '🧳';
+      default: return '✈️';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-pink-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-6"></div>
+          <p className="text-purple-200 text-lg">Loading your trips...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-      <div className="bg-gradient-to-br from-purple-900/95 via-purple-800/95 to-pink-900/95 backdrop-blur-xl rounded-lg shadow-2xl border border-purple-500/30 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-purple-500/30">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-pink-900">
+      {/* Header */}
+      <header className="bg-black/30 backdrop-blur-xl border-b border-purple-500/30 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 shadow-2xl mr-4">
+                <Plane size={32} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-lg">JourneyVerse</h1>
+                <p className="text-purple-200 text-sm">Your AI-powered travel companion</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-right mr-4">
+                <p className="text-white font-medium text-lg">{user?.user_metadata?.full_name || 'Traveler'}</p>
+                <p className="text-purple-300 text-sm">{user?.email}</p>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center px-6 py-3 bg-purple-500/20 text-purple-200 rounded-lg hover:bg-purple-500/30 transition-all duration-200 border border-purple-400/30 hover:scale-105 shadow-lg"
+              >
+                <LogOut size={18} className="mr-2" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-12">
           <button
-            onClick={onClose}
-            className="text-purple-300 hover:text-white transition-colors"
+            onClick={() => setShowAIChat(true)}
+            className="flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-2xl hover:shadow-purple-500/25 hover:scale-105 text-lg font-semibold"
           >
-            <X size={24} />
+            <Bot size={24} className="mr-3" />
+            Plan with AI Assistant
+          </button>
+          
+          <button
+            onClick={() => handleCreateTrip(null)}
+            className="flex items-center justify-center px-8 py-4 bg-black/40 backdrop-blur-xl text-white rounded-xl hover:bg-black/50 transition-all duration-200 border border-purple-500/30 shadow-xl hover:scale-105 text-lg font-semibold"
+          >
+            <Plus size={24} className="mr-3" />
+            Create Trip Manually
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Trip Title */}
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-purple-200 mb-2">
-              Trip Title
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              disabled={isReadOnly}
-              className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                errors.title ? 'border-red-500' : 'border-purple-400/30'
-              } ${isReadOnly ? 'bg-black/20' : ''}`}
-              placeholder="e.g., Summer Vacation in Europe"
-            />
-            {errors.title && <p className="text-pink-400 text-sm mt-1">{errors.title}</p>}
-          </div>
-
-          {/* Destination */}
-          <div>
-            <label htmlFor="destination" className="block text-sm font-medium text-purple-200 mb-2">
-              <MapPin size={16} className="inline mr-1 text-purple-300" />
-              Destination
-            </label>
-            <input
-              type="text"
-              id="destination"
-              name="destination"
-              value={formData.destination}
-              onChange={handleInputChange}
-              disabled={isReadOnly}
-              className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                errors.destination ? 'border-red-500' : 'border-purple-400/30'
-              } ${isReadOnly ? 'bg-black/20' : ''}`}
-              placeholder="e.g., Paris, France"
-            />
-            {errors.destination && <p className="text-pink-400 text-sm mt-1">{errors.destination}</p>}
-          </div>
-
-          {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-purple-200 mb-2">
-                <Calendar size={16} className="inline mr-1 text-purple-300" />
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="start_date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  errors.start_date ? 'border-red-500' : 'border-purple-400/30'
-                } ${isReadOnly ? 'bg-black/20' : ''}`}
-              />
-              {errors.start_date && <p className="text-pink-400 text-sm mt-1">{errors.start_date}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-purple-200 mb-2">
-                <Calendar size={16} className="inline mr-1 text-purple-300" />
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end_date"
-                name="end_date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  errors.end_date ? 'border-red-500' : 'border-purple-400/30'
-                } ${isReadOnly ? 'bg-black/20' : ''}`}
-              />
-              {errors.end_date && <p className="text-pink-400 text-sm mt-1">{errors.end_date}</p>}
+        {/* Trips Grid */}
+        {trips.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-16 border border-purple-500/30 shadow-2xl max-w-2xl mx-auto">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-6 w-24 h-24 mx-auto mb-8 shadow-2xl">
+                <Plane size={48} className="text-white animate-pulse" />
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-6">Ready for Your Next Adventure?</h3>
+              <p className="text-purple-200 text-lg mb-10 leading-relaxed">
+                Start planning your perfect trip with our AI assistant or create one manually. 
+                Your journey to amazing destinations begins here!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => setShowAIChat(true)}
+                  className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-xl hover:scale-105 text-lg font-semibold"
+                >
+                  <Bot size={20} className="inline mr-2" />
+                  Start with AI
+                </button>
+                <button
+                  onClick={() => handleCreateTrip(null)}
+                  className="px-8 py-4 bg-black/40 backdrop-blur-xl text-white rounded-xl hover:bg-black/50 transition-all duration-200 border border-purple-500/30 shadow-xl hover:scale-105 text-lg font-semibold"
+                >
+                  <Plus size={20} className="inline mr-2" />
+                  Create Manually
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Budget and Travelers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="budget" className="block text-sm font-medium text-purple-200 mb-2">
-                <DollarSign size={16} className="inline mr-1 text-purple-300" />
-                Budget (Optional)
-              </label>
-              <input
-                type="number"
-                id="budget"
-                name="budget"
-                value={formData.budget}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  errors.budget ? 'border-red-500' : 'border-purple-400/30'
-                } ${isReadOnly ? 'bg-black/20' : ''}`}
-                placeholder="e.g., 2000"
-                min="0"
-                step="0.01"
-              />
-              {errors.budget && <p className="text-pink-400 text-sm mt-1">{errors.budget}</p>}
-            </div>
-            
-            <div>
-              <label htmlFor="travelers_count" className="block text-sm font-medium text-purple-200 mb-2">
-                <Users size={16} className="inline mr-1 text-purple-300" />
-                Number of Travelers
-              </label>
-              <input
-                type="number"
-                id="travelers_count"
-                name="travelers_count"
-                value={formData.travelers_count}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  errors.travelers_count ? 'border-red-500' : 'border-purple-400/30'
-                } ${isReadOnly ? 'bg-black/20' : ''}`}
-                min="1"
-                max="20"
-                step="1"
-              />
-              {errors.travelers_count && <p className="text-pink-400 text-sm mt-1">{errors.travelers_count}</p>}
-            </div>
-          </div>
-
-          {/* Trip Type and Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="trip_type" className="block text-sm font-medium text-purple-200 mb-2">
-                <Plane size={16} className="inline mr-1 text-purple-300" />
-                Trip Type
-              </label>
-              <select
-                id="trip_type"
-                name="trip_type"
-                value={formData.trip_type}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  isReadOnly ? 'bg-black/20' : ''
-                } border-purple-400/30`}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {trips.map((trip) => (
+              <div
+                key={trip.id}
+                className="bg-black/40 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/30 shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:scale-105 hover:border-purple-400/50"
               >
-                <option value="leisure">Leisure</option>
-                <option value="business">Business</option>
-                <option value="adventure">Adventure</option>
-                <option value="family">Family</option>
-                <option value="romantic">Romantic</option>
-                <option value="solo">Solo</option>
-              </select>
-            </div>
-            
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-purple-200 mb-2">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                disabled={isReadOnly}
-                className={`w-full px-3 py-2 bg-white/10 border rounded-md text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent ${
-                  isReadOnly ? 'bg-black/20' : ''
-                } border-purple-400/30`}
-              >
-                <option value="planning">Planning</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
-
-          {errors.submit && (
-            <div className="text-pink-400 text-sm">{errors.submit}</div>
-          )}
-
-          {/* Actions */}
-          {!isReadOnly && (
-            <div className="flex justify-end space-x-3 pt-4 border-t border-purple-500/30">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-purple-200 bg-purple-500/20 hover:bg-purple-500/30 rounded-md transition-colors border border-purple-400/30"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-              >
-                {loading ? (
+                <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {mode === 'create' ? 'Creating...' : 'Saving...'}
+                    <span className="text-3xl mr-3">{getTripTypeIcon(trip.trip_type)}</span>
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-1 tracking-tight">{trip.title}</h3>
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(trip.status)}`}>
+                        {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  mode === 'create' ? 'Create Trip' : 'Save Changes'
-                )}
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center text-purple-200">
+                    <MapPin size={18} className="mr-3 text-purple-400" />
+                    <span className="font-medium">{trip.destination}</span>
+                  </div>
+                  
+                  <div className="flex items-center text-purple-200">
+                    <Calendar size={18} className="mr-3 text-purple-400" />
+                    <span className="font-medium">
+                      {new Date(trip.start_date).toLocaleDateString()} - {new Date(trip.end_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center text-purple-200">
+                      <Users size={18} className="mr-3 text-purple-400" />
+                      <span className="font-medium">{trip.travelers_count} traveler{trip.travelers_count !== 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    {trip.budget && (
+                      <div className="flex items-center text-purple-200">
+                        <DollarSign size={18} className="mr-2 text-purple-400" />
+                        <span className="font-medium">${trip.budget.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-center space-x-3">
+                  <button
+                    onClick={() => handleViewTrip(trip)}
+                    className="flex items-center px-4 py-2 bg-purple-500/20 text-purple-200 rounded-lg hover:bg-purple-500/30 transition-colors border border-purple-400/30 hover:scale-105"
+                  >
+                    <Eye size={16} className="mr-2" />
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleEditTrip(trip)}
+                    className="flex items-center px-4 py-2 bg-blue-500/20 text-blue-200 rounded-lg hover:bg-blue-500/30 transition-colors border border-blue-400/30 hover:scale-105"
+                  >
+                    <Edit size={16} className="mr-2" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTrip(trip)}
+                    className="flex items-center px-4 py-2 bg-red-500/20 text-red-200 rounded-lg hover:bg-red-500/30 transition-colors border border-red-400/30 hover:scale-105"
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Modals */}
+      <AIChatModal
+        isOpen={showAIChat}
+        onClose={() => setShowAIChat(false)}
+        onCreateTrip={handleCreateTripFromAI}
+      />
+
+      <TripModal
+        isOpen={showTripModal}
+        onClose={() => setShowTripModal(false)}
+        trip={selectedTrip}
+        mode={modalMode}
+        onSave={handleSaveTrip}
+      />
     </div>
   );
 };
 
-export default TripModal;
+export default Dashboard;
