@@ -100,7 +100,6 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, trip, mode, onSa
     if (!validateForm()) return;
     
     setLoading(true);
-          onSave={modalMode === 'create' ? createTrip : (id: string, updates: any) => updateTrip(id, updates)}
     
     const tripData = {
       ...formData,
