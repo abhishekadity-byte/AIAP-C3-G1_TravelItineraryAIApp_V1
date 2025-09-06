@@ -190,7 +190,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('✅ Parsed n8n response:', result);
 
       return {
-        content: result.response || result.message || 'I received your message and I\'m processing it.',
+        content: result.response || result.message || result.content || result.text || result.reply || 'I received your message and I\'m processing it.',
         suggestions: result.suggestions || [],
         context: result.context || {},
         tripData: result.tripData || null,
@@ -413,10 +413,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       // Try n8n webhook first if enabled
       if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
         console.log('🔄 Attempting n8n webhook call...');
+        console.log('📋 Expected n8n response format: { response: "message", suggestions: [...], context: {...} }');
         aiResponse = await callN8nWebhook(currentInput, newContext);
         
         if (aiResponse) {
           console.log('✅ n8n webhook successful:', aiResponse);
+          console.log('📝 Using n8n response content:', aiResponse.content);
         } else {
           console.log('❌ n8n webhook failed, falling back to local AI');
         }
@@ -428,6 +430,8 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       if (!aiResponse) {
         console.log('🤖 Using local AI fallback');
         aiResponse = generateAIResponse(currentInput);
+      } else {
+        console.log('🎯 Using n8n response:', aiResponse.content);
       }
 
       // Add AI response immediately (no artificial delay for n8n responses)
