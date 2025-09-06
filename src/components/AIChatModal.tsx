@@ -241,7 +241,25 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('💬 Final response content:', result.response);
 
       // Extract the actual response content with detailed logging
-      const responseContent = result.response || result.message || result.content || result.text || result.reply;
+      // Check for nested output structure first, then fallback to direct fields
+      let responseContent;
+      if (result.output && result.output.response) {
+        responseContent = result.output.response;
+        console.log('🎯 Found response in output.response:', responseContent);
+      } else if (result.response) {
+        responseContent = result.response;
+        console.log('🎯 Found response in direct response field:', responseContent);
+      } else if (result.message) {
+        responseContent = result.message;
+        console.log('🎯 Found response in message field:', responseContent);
+      } else if (result.content) {
+        responseContent = result.content;
+        console.log('🎯 Found response in content field:', responseContent);
+      } else {
+        responseContent = result.text || result.reply;
+        console.log('🎯 Found response in fallback fields:', responseContent);
+      }
+      
       console.log('🎯 Extracted response content:', responseContent);
       
       if (!responseContent) {
@@ -251,10 +269,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       const finalResponse = {
         content: responseContent || 'I received your message and I\'m processing it.',
-        suggestions: result.suggestions || [],
-        context: result.context || {},
-        tripData: result.tripData || null,
-        shouldCreateTrip: result.shouldCreateTrip || false
+        suggestions: result.output?.suggestions || result.suggestions || [],
+        context: result.output?.context || result.context || {},
+        tripData: result.output?.tripData || result.tripData || null,
+        shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
       console.log('📤 Final response object:', finalResponse);
