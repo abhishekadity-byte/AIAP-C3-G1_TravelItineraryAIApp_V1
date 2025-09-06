@@ -430,42 +430,38 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         aiResponse = generateAIResponse(currentInput);
       }
 
-      // Simulate thinking time for better UX
-      const thinkingTime = N8N_CONFIG.enabled ? 2000 : 1500;
-      
-      setTimeout(() => {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: aiResponse.content,
-          timestamp: new Date(),
-          suggestions: aiResponse.suggestions
-        };
+      // Add AI response immediately (no artificial delay for n8n responses)
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse.content,
+        timestamp: new Date(),
+        suggestions: aiResponse.suggestions
+      };
 
-        setMessages(prev => [...prev, aiMessage]);
-        setIsTyping(false);
+      setMessages(prev => [...prev, aiMessage]);
+      setIsTyping(false);
 
-        // Handle trip creation if suggested by n8n
-        if (aiResponse.shouldCreateTrip && aiResponse.tripData) {
-          setTimeout(() => {
-            const tripCreationMessage: Message = {
-              id: (Date.now() + 2).toString(),
-              type: 'ai',
-              content: "🎉 Perfect! I have all the information I need to create your trip. Would you like me to add it to your dashboard?",
-              timestamp: new Date(),
-              suggestions: [
-                "Yes, create the trip!",
-                "Let me review the details first",
-                "I want to modify something"
-              ]
-            };
-            setMessages(prev => [...prev, tripCreationMessage]);
-          }, 1000);
-        } else {
-          // Check for trip creation using local logic
-          checkForTripCreation(currentInput, newContext);
-        }
-      }, thinkingTime);
+      // Handle trip creation if suggested by n8n
+      if (aiResponse.shouldCreateTrip && aiResponse.tripData) {
+        setTimeout(() => {
+          const tripCreationMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            type: 'ai',
+            content: "🎉 Perfect! I have all the information I need to create your trip. Would you like me to add it to your dashboard?",
+            timestamp: new Date(),
+            suggestions: [
+              "Yes, create the trip!",
+              "Let me review the details first",
+              "I want to modify something"
+            ]
+          };
+          setMessages(prev => [...prev, tripCreationMessage]);
+        }, 1000);
+      } else if (!aiResponse.shouldCreateTrip) {
+        // Only check for trip creation using local logic if n8n didn't handle it
+        checkForTripCreation(currentInput, newContext);
+      }
       
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
