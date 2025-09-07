@@ -185,35 +185,70 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         return null;
       }
       
-      let responseContent = result.response || result.message || result.content || result.text || result.reply;
-      let suggestions = result.suggestions || [];
+      // Extract response content - handle multiple possible formats
+      let responseContent = null;
+      let suggestions = [];
+      let context = {};
+      let tripData = null;
+      let shouldCreateTrip = false;
       
-      // Check if the response content itself is a JSON string that needs parsing
+      // First, try to get the response from common fields
+      responseContent = result.response || result.message || result.content || result.text || result.reply;
+      suggestions = result.suggestions || [];
+      context = result.context || {};
+      tripData = result.tripData || null;
+      shouldCreateTrip = result.shouldCreateTrip || false;
+      
+      // If response content is a JSON string, parse it
       if (responseContent && typeof responseContent === 'string') {
-        if (responseContent.startsWith('{') && responseContent.endsWith('}')) {
+        // Check if it's a JSON string
+        if (responseContent.trim().startsWith('{') && responseContent.trim().endsWith('}')) {
           try {
-            console.log('🔍 Response content is JSON string, parsing...');
+            console.log('🔍 Response content appears to be JSON string, parsing...');
             const parsedContent = JSON.parse(responseContent);
-            console.log('✅ Parsed response content:', parsedContent);
+            console.log('✅ Successfully parsed response content JSON:', parsedContent);
             
-            // Use the parsed content as the new result
-            responseContent = parsedContent.response || parsedContent.message || parsedContent.content || parsedContent.text || parsedContent.reply;
+            // Extract from parsed content
+            responseContent = parsedContent.response || parsedContent.message || parsedContent.content || parsedContent.text || parsedContent.reply || responseContent;
             suggestions = parsedContent.suggestions || suggestions;
-            result.context = parsedContent.context || result.context || {};
-            result.tripData = parsedContent.tripData || result.tripData || null;
-            result.shouldCreateTrip = parsedContent.shouldCreateTrip || result.shouldCreateTrip || false;
+            context = parsedContent.context || context;
+            tripData = parsedContent.tripData || tripData;
+            shouldCreateTrip = parsedContent.shouldCreateTrip || shouldCreateTrip;
           } catch (parseError) {
             console.log('📝 Response content is not valid JSON, using as plain text');
+            // Keep the original responseContent as is
+          }
+        }
+        
+        // If still looks like JSON but parsing failed, try regex extraction
+        if (!responseContent || responseContent.includes('"response"')) {
+          console.log('🔧 Attempting regex extraction from response...');
+          const responseMatch = responseContent.match(/"response":\s*"([^"]+)"/);
+          const suggestionsMatch = responseContent.match(/"suggestions":\s*\[([^\]]+)\]/);
+          
+          if (responseMatch) {
+            responseContent = responseMatch[1];
+            console.log('✅ Extracted response via regex:', responseContent);
+          }
+          
+          if (suggestionsMatch) {
+            try {
+              const suggestionsStr = '[' + suggestionsMatch[1] + ']';
+              suggestions = JSON.parse(suggestionsStr);
+              console.log('✅ Extracted suggestions via regex:', suggestions);
+            } catch (e) {
+              console.log('❌ Failed to parse suggestions via regex');
+            }
           }
         }
       }
       
       const finalResponse = {
-        content: responseContent || "I received your message but couldn't parse the response properly.",
+        content: responseContent || "I'm here to help you plan your trip! Could you tell me more about what you have in mind?",
         suggestions: suggestions,
-        context: result.context || {},
-        tripData: result.tripData || null,
-        shouldCreateTrip: result.shouldCreateTrip || false
+        context: context,
+        tripData: tripData,
+        shouldCreateTrip: shouldCreateTrip
       };
       
       console.log('✅ Final parsed response:', finalResponse);
