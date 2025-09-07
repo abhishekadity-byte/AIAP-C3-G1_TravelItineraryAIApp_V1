@@ -548,7 +548,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         }, 1000);
       } else if (!aiResponse.shouldCreateTrip && !N8N_CONFIG.enabled) {
       } else if (!aiResponse.shouldCreateTrip && !n8nConfig.enabled) {
-        // Only check for trip creation using local logic if n8n didn't handle it
         checkForTripCreation(currentInput, newContext);
       }
       
@@ -620,7 +619,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         ...conversationContext,
         chatHistory: messages,
         aiGenerated: true,
-        n8nEnabled: N8N_CONFIG.enabled
+        n8nEnabled: getN8nConfig().enabled
       },
       itinerary: {
         generatedByAI: true,
