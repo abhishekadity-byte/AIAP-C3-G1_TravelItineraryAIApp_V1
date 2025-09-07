@@ -15,6 +15,13 @@ interface AIChatModalProps {
   onCreateTrip: (tripData: any) => void;
 }
 
+// Configuration for n8n webhook
+const N8N_CONFIG = {
+  webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
+  enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
+  timeout: 120000 // 2 minutes timeout for AI workflows
+};
+
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -33,21 +40,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
-  // Configuration for n8n webhook - moved inside component to avoid initialization issues
-  const getN8nConfig = () => ({
-    webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
-    enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
-    timeout: 120000 // 2 minutes timeout for AI workflows
-  });
-
   // Initialize chat session with welcome message
   const initializeChatSession = () => {
     if (!sessionInitialized) {
-      const n8nConfig = getN8nConfig();
       const welcomeMessage: Message = {
         id: '1',
         type: 'ai',
-        content: n8nConfig.enabled 
+        content: N8N_CONFIG.enabled 
           ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
           : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
         timestamp: new Date(),
@@ -109,27 +108,20 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
-    const n8nConfig = getN8nConfig();
+    console.log('📡 Calling n8n webhook for message:', userMessage);
     
-    console.log('📡 Starting n8n webhook call for message:', userMessage);
-    console.log('🔧 n8nConfig:', n8nConfig);
-    
-    if (!n8nConfig.enabled || !n8nConfig.webhookUrl) {
-      console.log('❌ n8n not enabled or URL not configured:', {
-        enabled: n8nConfig.enabled,
-        hasUrl: !!n8nConfig.webhookUrl,
-        url: n8nConfig.webhookUrl
-      });
+    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+      console.log('❌ n8n not enabled or URL not configured');
       return null;
     }
     
     // Check for placeholder URL
-    if (n8nConfig.webhookUrl.includes('your-n8n-instance.com') || n8nConfig.webhookUrl.includes('your-ngrok-url')) {
-      console.log('❌ n8n URL contains placeholder text, not configured properly');
+    if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
+      console.log('❌ n8n not configured properly');
       return null;
     }
 
-    console.log('🚀 n8n webhook URL validated, making request...');
+    console.log('🚀 Waiting for n8n workflow to complete...');
 
     try {
       const payload = {
@@ -141,13 +133,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         sessionId: sessionIdRef.current // Use persistent session ID
       };
 
-      console.log('📤 Sending payload to n8n webhook:', n8nConfig.webhookUrl, payload);
+      console.log('📤 Sending to n8n webhook:', N8N_CONFIG.webhookUrl);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), n8nConfig.timeout);
+      const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
 
       console.log('⏳ Waiting for n8n workflow response...');
-      const response = await fetch(n8nConfig.webhookUrl, {
+      const response = await fetch(N8N_CONFIG.webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +152,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error('❌ n8n webhook HTTP error details:', response.status, response.statusText, response.url);
         console.error('❌ n8n webhook HTTP error:', response.status, response.statusText);
         return null; // Fall back to local AI instead of throwing
       }
@@ -168,121 +159,72 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('✅ n8n workflow HTTP response received, parsing...');
       const responseText = await response.text();
       console.log('📥 n8n workflow response parsed, length:', responseText.length);
-      console.log('📄 Full n8n response text:', responseText);
-      console.log('📄 Raw n8n response text:', responseText);
       
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log('🔍 Parsed JSON result:', result);
+        
+        // Handle array responses from n8n (extract first item)
+        if (Array.isArray(result) && result.length > 0) {
+          console.log('📦 n8n returned array, using first item');
+          result = result[0];
+        } else if (Array.isArray(result) && result.length === 0) {
+          console.error('❌ n8n returned empty array');
+          return null;
+        }
       } catch (parseError) {
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
         return null; // Fall back to local AI
       }
       
-      // Handle array responses from n8n (extract first item)
-      if (Array.isArray(result) && result.length > 0) {
-        console.log('📦 n8n returned array, using first item');
-        result = result[0];
-        
-        // Check if the array item has an 'output' field
-        if (result && result.output) {
-          console.log('🎯 Found output field in array item, using it');
-          result = result.output;
-        }
-      } else if (Array.isArray(result) && result.length === 0) {
-        console.error('❌ n8n returned empty array');
-        return null;
+      // Extract the actual response content with detailed logging
+      // Check for nested output structure first, then fallback to direct fields
+      let responseContent;
+      if (result.output && result.output.response) {
+        responseContent = result.output.response;
+      } else if (result.response) {
+        responseContent = result.response;
+      } else if (result.message) {
+        responseContent = result.message;
+      } else if (result.content) {
+        responseContent = result.content;
+      } else {
+        responseContent = result.text || result.reply;
       }
       
-      // Extract response content - handle multiple possible formats
-      let responseContent = null;
-      let suggestions = [];
-      let context = {};
-      let tripData = null;
-      let shouldCreateTrip = false;
-      
-      // First, try to get the response from common fields
-      responseContent = result.response || result.message || result.content || result.text || result.reply;
-      suggestions = result.suggestions || [];
-      context = result.context || {};
-      tripData = result.tripData || null;
-      shouldCreateTrip = result.shouldCreateTrip || false;
-      
-      // If response content is a JSON string, parse it
-      if (responseContent && typeof responseContent === 'string') {
-        // Check if it's a JSON string
-        if (responseContent.trim().startsWith('{') && responseContent.trim().endsWith('}')) {
-          try {
-            console.log('🔍 Response content appears to be JSON string, parsing...');
-            const parsedContent = JSON.parse(responseContent);
-            console.log('✅ Successfully parsed response content JSON:', parsedContent);
-            
-            // Extract from parsed content
-            responseContent = parsedContent.response || parsedContent.message || parsedContent.content || parsedContent.text || parsedContent.reply || responseContent;
-            suggestions = parsedContent.suggestions || suggestions;
-            context = parsedContent.context || context;
-            tripData = parsedContent.tripData || tripData;
-            shouldCreateTrip = parsedContent.shouldCreateTrip || shouldCreateTrip;
-          } catch (parseError) {
-            console.log('📝 Response content is not valid JSON, using as plain text');
-            // Keep the original responseContent as is
-          }
-        }
-        
-        // If still looks like JSON but parsing failed, try regex extraction
-        if (!responseContent || responseContent.includes('"response"')) {
-          console.log('🔧 Attempting regex extraction from response...');
-          const responseMatch = responseContent.match(/"response":\s*"([^"]+)"/);
-          const suggestionsMatch = responseContent.match(/"suggestions":\s*\[([^\]]+)\]/);
-          
-          if (responseMatch) {
-            responseContent = responseMatch[1];
-            console.log('✅ Extracted response via regex:', responseContent);
-          }
-          
-          if (suggestionsMatch) {
-            try {
-              const suggestionsStr = '[' + suggestionsMatch[1] + ']';
-              suggestions = JSON.parse(suggestionsStr);
-              console.log('✅ Extracted suggestions via regex:', suggestions);
-            } catch (e) {
-              console.log('❌ Failed to parse suggestions via regex');
-            }
-          }
-        }
+      if (!responseContent) {
+        console.warn('⚠️ No response content found in n8n response, available fields:', Object.keys(result));
       }
       
       const finalResponse = {
-        content: responseContent || "I'm here to help you plan your trip! Could you tell me more about what you have in mind?",
-        suggestions: suggestions,
-        context: context,
-        tripData: tripData,
-        shouldCreateTrip: shouldCreateTrip
+        content: responseContent ? responseContent.replace(/\\n/g, '\n') : 'I received your message and I\'m processing it.',
+        suggestions: result.output?.suggestions || result.suggestions || [],
+        context: result.output?.context || result.context || {},
+        tripData: result.output?.tripData || result.tripData || null,
+        shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
-      console.log('✅ Final parsed response:', finalResponse);
+      console.log('📋 Final parsed response:', {
+        hasContent: !!finalResponse.content,
+        contentLength: finalResponse.content?.length,
+        hasSuggestions: !!finalResponse.suggestions,
+        suggestionsCount: finalResponse.suggestions?.length,
+        hasContext: Object.keys(finalResponse.context).length > 0,
+        shouldCreateTrip: finalResponse.shouldCreateTrip
+      });
       
       console.log('🎯 n8n workflow processing completed successfully');
       
       return finalResponse;
-      
 
     } catch (error) {
       console.error('❌ Error calling n8n workflow:', error);
       
       if (error.name === 'AbortError') {
-        console.log('⏰ n8n workflow timeout after', n8nConfig.timeout / 1000, 'seconds');
+        console.log('⏰ n8n workflow timeout after', N8N_CONFIG.timeout / 1000, 'seconds');
       } else if (error.message.includes('Failed to fetch')) {
         console.log('🌐 Network error - n8n URL may not be accessible');
       }
-      
-      // Log the full error for debugging
-      console.error('❌ Full error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
       
       // Always return null to fall back to local AI
       return null; // Fall back to local AI
@@ -480,30 +422,18 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     
     try {
       let aiResponse = null;
-      const n8nConfig = getN8nConfig();
       
       // Try n8n webhook first if enabled
-      console.log('🔍 Checking n8n configuration before call...');
-      console.log('🔧 N8N enabled:', n8nConfig.enabled);
-      console.log('🔧 N8N URL:', n8nConfig.webhookUrl);
-      
-      if (n8nConfig.enabled && n8nConfig.webhookUrl && !n8nConfig.webhookUrl.includes('your-')) {
+      if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
         console.log('🔄 Attempting n8n webhook call...');
         console.log('⏳ Waiting for n8n workflow to complete (timeout: 2 minutes)...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
         
         if (aiResponse) {
           console.log('✅ n8n workflow completed successfully');
-          console.log('📋 AI Response from n8n:', aiResponse);
         } else {
           console.log('❌ n8n workflow failed or timed out, falling back to local AI');
         }
-      } else {
-        console.log('⚠️ n8n webhook call skipped due to configuration:', {
-          enabled: n8nConfig.enabled,
-          hasUrl: !!n8nConfig.webhookUrl,
-          urlValid: n8nConfig.webhookUrl && !n8nConfig.webhookUrl.includes('your-')
-        });
       }
       
       // Fall back to local AI if n8n fails or is disabled
@@ -546,6 +476,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           };
           setMessages(prev => [...prev, tripCreationMessage]);
         }, 1000);
+      } else if (!aiResponse.shouldCreateTrip && !N8N_CONFIG.enabled) {
+        // Only check for trip creation using local logic if n8n didn't handle it
+        checkForTripCreation(currentInput, newContext);
       }
       
     } catch (error) {
@@ -616,7 +549,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         ...conversationContext,
         chatHistory: messages,
         aiGenerated: true,
-        n8nEnabled: getN8nConfig().enabled
+        n8nEnabled: N8N_CONFIG.enabled
       },
       itinerary: {
         generatedByAI: true,
@@ -650,7 +583,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             <div>
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
               <p className="text-blue-100 text-sm">
-                {getN8nConfig().enabled 
+                {N8N_CONFIG.enabled 
                   ? `Powered by n8n workflows • Session: ${sessionIdRef.current.split('-')[1]}`
                   : 'Let\'s plan your perfect trip together!'
                 }
@@ -722,7 +655,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                   <div className="flex items-center space-x-2">
                     <Loader className="animate-spin text-purple-400" size={16} />
                     <p className="text-sm text-purple-200">
-                      {getN8nConfig().enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
+                      {N8N_CONFIG.enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
                     </p>
                   </div>
                 </div>
