@@ -35,7 +35,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     tripType: null,
     preferences: []
   });
-  const [n8nStatus, setN8nStatus] = useState<'connected' | 'disconnected' | 'testing'>('disconnected');
   const [sessionInitialized, setSessionInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,73 +106,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     }
   }, [isOpen]);
 
-  // Separate effect for testing n8n connection only once when modal opens
-  useEffect(() => {
-    if (isOpen && N8N_CONFIG.enabled && !sessionInitialized) {
-      console.log('🔍 Testing n8n connection once...');
-      testN8nConnection();
-    }
-  }, [isOpen, sessionInitialized]);
-
-  // Test n8n connection
-  const testN8nConnection = async () => {
-    console.log('🧪 Testing n8n connection (single call)');
-    
-    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
-      console.log('❌ n8n not enabled or no webhook URL');
-      setN8nStatus('disconnected');
-      return;
-    }
-    
-    // Check for placeholder URL
-    if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
-      console.log('❌ n8n URL is still placeholder');
-      setN8nStatus('disconnected');
-      return;
-    }
-
-    setN8nStatus('testing');
-    console.log('🔄 Single connection test to:', N8N_CONFIG.webhookUrl);
-    
-    try {
-      // Simple test request
-      const response = await fetch(N8N_CONFIG.webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          test: true,
-          message: "Connection test - please ignore",
-          timestamp: new Date().toISOString()
-        }),
-        signal: AbortSignal.timeout(5000) // 5 second timeout for test
-      });
-
-      // Accept any response that's not a network error
-      // n8n webhooks might return various status codes but still be working
-      if (response.status < 500) {
-        setN8nStatus('connected');
-        console.log('✅ n8n connection successful, status:', response.status);
-      } else {
-        setN8nStatus('disconnected');
-        console.log('❌ n8n connection failed with server error:', response.status);
-      }
-    } catch (error) {
-      // Only mark as disconnected for actual network errors
-      if (error.name === 'AbortError') {
-        setN8nStatus('disconnected');
-        console.log('⏰ n8n connection timeout');
-      } else if (error.message.includes('Failed to fetch')) {
-        setN8nStatus('disconnected');
-        console.log('🌐 n8n network error - URL may not be accessible');
-      } else {
-        // For other errors, assume it might still work and mark as connected
-        setN8nStatus('connected');
-        console.log('⚠️ n8n connection test had issues but assuming it works:', error.message);
-      }
-    }
-  };
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
     console.log('📡 Calling n8n webhook for message:', userMessage);
@@ -635,21 +567,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
               <p className="text-blue-100 text-sm">
                 {N8N_CONFIG.enabled 
-                  ? `Powered by n8n workflows ${n8nStatus === 'connected' ? '🟢' : n8nStatus === 'testing' ? '🟡' : '🔴'} • Session: ${sessionIdRef.current.split('-')[1]}`
+                  ? `Powered by n8n workflows • Session: ${sessionIdRef.current.split('-')[1]}`
                   : 'Let\'s plan your perfect trip together!'
                 }
               </p>
             </div>
           </div>
-          {N8N_CONFIG.enabled && (
-            <div className={`text-xs px-2 py-1 rounded ${
-              n8nStatus === 'connected' ? 'bg-purple-500/20 text-purple-100' :
-              n8nStatus === 'testing' ? 'bg-pink-500/20 text-pink-100' :
-              'bg-red-500/20 text-red-100'
-            }`}>
-              n8n {n8nStatus === 'connected' ? 'Connected' : n8nStatus === 'testing' ? 'Testing...' : 'Disconnected'}
-            </div>
-          )}
           <button
             onClick={onClose}
             className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
