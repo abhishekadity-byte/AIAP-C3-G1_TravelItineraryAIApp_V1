@@ -186,15 +186,40 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
         console.log('📄 Attempting to use raw response as content...');
         
-        // Try to use the raw response as content if it looks like text
+        // Try to parse the raw response as JSON one more time with different approach
         if (responseText && responseText.length > 0 && !responseText.startsWith('<')) {
-          return {
-            content: `Raw n8n response: ${responseText}`,
-            suggestions: [],
-            context: {},
-            tripData: null,
-            shouldCreateTrip: false
-          };
+          // Check if it's a JSON string that needs parsing
+          if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+            try {
+              const parsedResponse = JSON.parse(responseText.trim());
+              console.log('✅ Successfully parsed raw response as JSON:', parsedResponse);
+              
+              // Extract the actual response content
+              let responseContent = parsedResponse.response || parsedResponse.message || parsedResponse.content || parsedResponse.text || parsedResponse.reply;
+              let suggestions = parsedResponse.suggestions || [];
+              
+              return {
+                content: responseContent || "I received your message but couldn't parse the response properly.",
+                suggestions: suggestions,
+                context: parsedResponse.context || {},
+                tripData: parsedResponse.tripData || null,
+                shouldCreateTrip: parsedResponse.shouldCreateTrip || false
+              };
+            } catch (secondParseError) {
+              console.error('❌ Second JSON parse attempt failed:', secondParseError);
+              // If it's still not parseable, extract content manually
+              const responseMatch = responseText.match(/"response"\s*:\s*"([^"]+)"/);
+              if (responseMatch) {
+                return {
+                  content: responseMatch[1],
+                  suggestions: [],
+                  context: {},
+                  tripData: null,
+                  shouldCreateTrip: false
+                };
+              }
+            }
+          }
         }
         
         return null; // Fall back to local AI
