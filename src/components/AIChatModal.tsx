@@ -108,20 +108,25 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
-    console.log('📡 Calling n8n webhook for message:', userMessage);
+    console.log('📡 Starting n8n webhook call for message:', userMessage);
+    console.log('🔧 N8N_CONFIG:', N8N_CONFIG);
     
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
-      console.log('❌ n8n not enabled or URL not configured');
+      console.log('❌ n8n not enabled or URL not configured:', {
+        enabled: N8N_CONFIG.enabled,
+        hasUrl: !!N8N_CONFIG.webhookUrl,
+        url: N8N_CONFIG.webhookUrl
+      });
       return null;
     }
     
     // Check for placeholder URL
-    if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com')) {
-      console.log('❌ n8n not configured properly');
+    if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com') || N8N_CONFIG.webhookUrl.includes('your-ngrok-url')) {
+      console.log('❌ n8n URL contains placeholder text, not configured properly');
       return null;
     }
 
-    console.log('🚀 Waiting for n8n workflow to complete...');
+    console.log('🚀 n8n webhook URL validated, making request...');
 
     try {
       const payload = {
@@ -133,7 +138,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         sessionId: sessionIdRef.current // Use persistent session ID
       };
 
-      console.log('📤 Sending to n8n webhook:', N8N_CONFIG.webhookUrl);
+      console.log('📤 Sending payload to n8n webhook:', N8N_CONFIG.webhookUrl, payload);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
@@ -152,6 +157,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        console.error('❌ n8n webhook HTTP error details:', response.status, response.statusText, response.url);
         console.error('❌ n8n webhook HTTP error:', response.status, response.statusText);
         return null; // Fall back to local AI instead of throwing
       }
@@ -159,6 +165,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('✅ n8n workflow HTTP response received, parsing...');
       const responseText = await response.text();
       console.log('📥 n8n workflow response parsed, length:', responseText.length);
+      console.log('📄 Full n8n response text:', responseText);
       console.log('📄 Raw n8n response text:', responseText);
       
       let result;
@@ -256,6 +263,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('🎯 n8n workflow processing completed successfully');
       
       return finalResponse;
+      
 
     } catch (error) {
       console.error('❌ Error calling n8n workflow:', error);
@@ -265,6 +273,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       } else if (error.message.includes('Failed to fetch')) {
         console.log('🌐 Network error - n8n URL may not be accessible');
       }
+      
+      // Log the full error for debugging
+      console.error('❌ Full error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       
       // Always return null to fall back to local AI
       return null; // Fall back to local AI
@@ -464,16 +479,27 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       let aiResponse = null;
       
       // Try n8n webhook first if enabled
-      if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
+      console.log('🔍 Checking n8n configuration before call...');
+      console.log('🔧 N8N enabled:', N8N_CONFIG.enabled);
+      console.log('🔧 N8N URL:', N8N_CONFIG.webhookUrl);
+      
+      if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl && !N8N_CONFIG.webhookUrl.includes('your-')) {
         console.log('🔄 Attempting n8n webhook call...');
         console.log('⏳ Waiting for n8n workflow to complete (timeout: 2 minutes)...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
         
         if (aiResponse) {
           console.log('✅ n8n workflow completed successfully');
+          console.log('📋 AI Response from n8n:', aiResponse);
         } else {
           console.log('❌ n8n workflow failed or timed out, falling back to local AI');
         }
+      } else {
+        console.log('⚠️ n8n webhook call skipped due to configuration:', {
+          enabled: N8N_CONFIG.enabled,
+          hasUrl: !!N8N_CONFIG.webhookUrl,
+          urlValid: N8N_CONFIG.webhookUrl && !N8N_CONFIG.webhookUrl.includes('your-')
+        });
       }
       
       // Fall back to local AI if n8n fails or is disabled
