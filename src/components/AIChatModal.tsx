@@ -197,12 +197,21 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       }
       
       const finalResponse = {
-        content: responseContent || 'I received your message and I\'m processing it.',
+        content: responseContent ? responseContent.replace(/\\n/g, '\n') : 'I received your message and I\'m processing it.',
         suggestions: result.output?.suggestions || result.suggestions || null,
         context: result.output?.context || result.context || {},
         tripData: result.output?.tripData || result.tripData || null,
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
+      
+      console.log('📋 Final parsed response:', {
+        hasContent: !!finalResponse.content,
+        contentLength: finalResponse.content?.length,
+        hasSuggestions: !!finalResponse.suggestions,
+        suggestionsCount: finalResponse.suggestions?.length,
+        hasContext: Object.keys(finalResponse.context).length > 0,
+        shouldCreateTrip: finalResponse.shouldCreateTrip
+      });
       
       console.log('🎯 n8n workflow processing completed successfully');
       
