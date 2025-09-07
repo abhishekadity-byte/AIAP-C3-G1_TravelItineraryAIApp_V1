@@ -198,7 +198,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       const finalResponse = {
         content: responseContent ? responseContent.replace(/\\n/g, '\n') : 'I received your message and I\'m processing it.',
-        suggestions: result.output?.suggestions || result.suggestions || null,
+        suggestions: result.output?.suggestions || result.suggestions || [],
         context: result.output?.context || result.context || {},
         tripData: result.output?.tripData || result.tripData || null,
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
@@ -439,7 +439,14 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       // Fall back to local AI if n8n fails or is disabled
       if (!aiResponse) {
         console.log('🤖 Using local AI fallback');
-        aiResponse = generateAIResponse(currentInput);
+        const localResponse = generateAIResponse(currentInput);
+        aiResponse = {
+          content: localResponse.content,
+          suggestions: localResponse.suggestions || [],
+          context: {},
+          tripData: null,
+          shouldCreateTrip: false
+        };
       }
 
       // Only add AI response after we have a complete response
@@ -448,7 +455,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         type: 'ai',
         content: aiResponse.content,
         timestamp: new Date(),
-        suggestions: aiResponse.suggestions || undefined
+        suggestions: aiResponse.suggestions || []
       };
 
       setMessages(prev => [...prev, aiMessage]);
