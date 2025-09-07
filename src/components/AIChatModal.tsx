@@ -246,6 +246,40 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       if (responseContent && typeof responseContent === 'string') {
         responseContent = responseContent.replace(/\\n/g, '\n').trim();
         console.log('🧹 Cleaned response content:', responseContent);
+        
+        // Check if the response content is a JSON string that needs parsing
+        if (responseContent.startsWith('{') && responseContent.endsWith('}')) {
+          try {
+            console.log('🔍 Attempting to parse response as JSON...');
+            const parsedContent = JSON.parse(responseContent);
+            console.log('✅ Successfully parsed JSON content:', parsedContent);
+            
+            // Extract the actual response from the parsed JSON
+            if (parsedContent.response) {
+              responseContent = parsedContent.response;
+              console.log('✅ Extracted response from JSON:', responseContent);
+              
+              // Also extract suggestions if available
+              if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
+                result.suggestions = parsedContent.suggestions;
+                console.log('✅ Extracted suggestions from JSON:', result.suggestions);
+              }
+              
+              // Extract other fields if available
+              if (parsedContent.context) {
+                result.context = parsedContent.context;
+              }
+              if (parsedContent.tripData) {
+                result.tripData = parsedContent.tripData;
+              }
+              if (parsedContent.shouldCreateTrip !== undefined) {
+                result.shouldCreateTrip = parsedContent.shouldCreateTrip;
+              }
+            }
+          } catch (parseError) {
+            console.log('📝 Response is not valid JSON, using as plain text:', responseContent);
+          }
+        }
       } else {
         console.log('❌ No valid response content found or not a string:', responseContent);
       }
