@@ -165,140 +165,58 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       try {
         result = JSON.parse(responseText);
         console.log('🔍 Parsed JSON result:', result);
-        console.log('🔍 Result type:', typeof result);
-        console.log('🔍 Result keys:', Object.keys(result));
-        
-        // Handle array responses from n8n (extract first item)
-        if (Array.isArray(result) && result.length > 0) {
-          console.log('📦 n8n returned array, using first item');
-          result = result[0];
-          
-          // Check if the array item has an 'output' field
-          if (result && result.output) {
-            console.log('🎯 Found output field in array item, using it');
-            result = result.output;
-          }
-        } else if (Array.isArray(result) && result.length === 0) {
-          console.error('❌ n8n returned empty array');
-          return null;
-        }
       } catch (parseError) {
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
-        console.log('📄 Attempting to use raw response as content...');
-        
-        // Try to parse the raw response as JSON one more time with different approach
-        if (responseText && responseText.length > 0 && !responseText.startsWith('<')) {
-          // Check if it's a JSON string that needs parsing
-          if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
-            try {
-              const parsedResponse = JSON.parse(responseText.trim());
-              console.log('✅ Successfully parsed raw response as JSON:', parsedResponse);
-              
-              // Extract the actual response content
-              let responseContent = parsedResponse.response || parsedResponse.message || parsedResponse.content || parsedResponse.text || parsedResponse.reply;
-              let suggestions = parsedResponse.suggestions || [];
-              
-              return {
-                content: responseContent || "I received your message but couldn't parse the response properly.",
-                suggestions: suggestions,
-                context: parsedResponse.context || {},
-                tripData: parsedResponse.tripData || null,
-                shouldCreateTrip: parsedResponse.shouldCreateTrip || false
-              };
-            } catch (secondParseError) {
-              console.error('❌ Second JSON parse attempt failed:', secondParseError);
-              // If it's still not parseable, extract content manually
-              const responseMatch = responseText.match(/"response"\s*:\s*"([^"]+)"/);
-              if (responseMatch) {
-                return {
-                  content: responseMatch[1],
-                  suggestions: [],
-                  context: {},
-                  tripData: null,
-                  shouldCreateTrip: false
-                };
-              }
-            }
-          }
-        }
-        
         return null; // Fall back to local AI
       }
       
-      // Extract the actual response content with detailed logging
-      console.log('🔍 Looking for response in these fields:');
-      console.log('  - result.response:', result.response);
-      console.log('  - result.message:', result.message);
-      console.log('  - result.content:', result.content);
+      // Handle array responses from n8n (extract first item)
+      if (Array.isArray(result) && result.length > 0) {
+        console.log('📦 n8n returned array, using first item');
+        result = result[0];
+        
+        // Check if the array item has an 'output' field
+        if (result && result.output) {
+          console.log('🎯 Found output field in array item, using it');
+          result = result.output;
+        }
+      } else if (Array.isArray(result) && result.length === 0) {
+        console.error('❌ n8n returned empty array');
+        return null;
+      }
       
       let responseContent = result.response || result.message || result.content || result.text || result.reply;
       let suggestions = result.suggestions || [];
       
-      // Check if the response content is a JSON string that needs parsing
+      // Check if the response content itself is a JSON string that needs parsing
       if (responseContent && typeof responseContent === 'string') {
-        // Handle escaped newlines first
-        responseContent = responseContent.replace(/\\n/g, '\n').trim();
-        console.log('🧹 Cleaned response content:', responseContent);
-        
-        // Check if the response content is a JSON string that needs parsing
         if (responseContent.startsWith('{') && responseContent.endsWith('}')) {
           try {
-            console.log('🔍 Attempting to parse response as JSON...');
+            console.log('🔍 Response content is JSON string, parsing...');
             const parsedContent = JSON.parse(responseContent);
-            console.log('✅ Successfully parsed JSON content:', parsedContent);
+            console.log('✅ Parsed response content:', parsedContent);
             
-            // Extract the actual response from the parsed JSON
-            if (parsedContent.response) {
-              responseContent = parsedContent.response;
-              console.log('✅ Extracted response from JSON:', responseContent);
-            }
-            
-            // Extract suggestions if available
-            if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
-              suggestions = parsedContent.suggestions;
-              console.log('✅ Extracted suggestions from JSON:', suggestions);
-            }
-            
-            // Extract other fields if available
-            if (parsedContent.context) {
-              result.context = parsedContent.context;
-            }
-            if (parsedContent.tripData) {
-              result.tripData = parsedContent.tripData;
-            }
-            if (parsedContent.shouldCreateTrip !== undefined) {
-              result.shouldCreateTrip = parsedContent.shouldCreateTrip;
-            }
+            // Use the parsed content as the new result
+            responseContent = parsedContent.response || parsedContent.message || parsedContent.content || parsedContent.text || parsedContent.reply;
+            suggestions = parsedContent.suggestions || suggestions;
+            result.context = parsedContent.context || result.context || {};
+            result.tripData = parsedContent.tripData || result.tripData || null;
+            result.shouldCreateTrip = parsedContent.shouldCreateTrip || result.shouldCreateTrip || false;
           } catch (parseError) {
-            console.log('📝 Response is not valid JSON, using as plain text:', responseContent);
-          }
-        }
-      }
-      
-      // If still no content, try to extract from any string field
-      if (!responseContent) {
-        console.log('🔍 Trying to find any string content in result...');
-        for (const [key, value] of Object.entries(result)) {
-          if (typeof value === 'string' && value.length > 10) {
-            console.log(`🎯 Found potential content in ${key}:`, value);
-            responseContent = value;
-            break;
+            console.log('📝 Response content is not valid JSON, using as plain text');
           }
         }
       }
       
       const finalResponse = {
-        content: responseContent || `I received your message but couldn't parse the response properly. Raw response: ${JSON.stringify(result).substring(0, 100)}...`,
+        content: responseContent || "I received your message but couldn't parse the response properly.",
         suggestions: suggestions,
         context: result.context || {},
         tripData: result.tripData || null,
         shouldCreateTrip: result.shouldCreateTrip || false
       };
       
-      console.log('📋 Final parsed response:');
-      console.log('  - content:', finalResponse.content);
-      console.log('  - suggestions:', finalResponse.suggestions);
-      console.log('  - context:', finalResponse.context);
+      console.log('✅ Final parsed response:', finalResponse);
       
       console.log('🎯 n8n workflow processing completed successfully');
       
