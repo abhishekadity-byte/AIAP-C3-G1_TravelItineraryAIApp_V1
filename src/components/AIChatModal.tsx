@@ -546,7 +546,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           };
           setMessages(prev => [...prev, tripCreationMessage]);
         }, 1000);
-      } else if (!aiResponse.shouldCreateTrip && !N8N_CONFIG.enabled) {
       } else if (!aiResponse.shouldCreateTrip && !n8nConfig.enabled) {
         checkForTripCreation(currentInput, newContext);
       }
