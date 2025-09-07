@@ -159,10 +159,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('✅ n8n workflow HTTP response received, parsing...');
       const responseText = await response.text();
       console.log('📥 n8n workflow response parsed, length:', responseText.length);
+      console.log('📄 Raw n8n response text:', responseText);
       
       let result;
       try {
         result = JSON.parse(responseText);
+        console.log('🔍 Parsed JSON result:', result);
         
         // Handle array responses from n8n (extract first item)
         if (Array.isArray(result) && result.length > 0) {
@@ -178,40 +180,25 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       }
       
       // Extract the actual response content with detailed logging
-      // Check for nested output structure first, then fallback to direct fields
-      let responseContent;
-      if (result.output && result.output.response) {
-        responseContent = result.output.response;
-      } else if (result.response) {
-        responseContent = result.response;
-      } else if (result.message) {
-        responseContent = result.message;
-      } else if (result.content) {
-        responseContent = result.content;
-      } else {
-        responseContent = result.text || result.reply;
+      let responseContent = result.response || result.output?.response || result.message || result.content || result.text || result.reply;
+      
+      // Handle escaped newlines and clean up the content
+      if (responseContent && typeof responseContent === 'string') {
+        responseContent = responseContent.replace(/\\n/g, '\n').trim();
       }
       
-      if (!responseContent) {
-        console.warn('⚠️ No response content found in n8n response, available fields:', Object.keys(result));
-      }
+      console.log('🎯 Extracted response content:', responseContent);
+      console.log('📋 Available fields in result:', Object.keys(result));
       
       const finalResponse = {
-        content: responseContent ? responseContent.replace(/\\n/g, '\n') : 'I received your message and I\'m processing it.',
+        content: responseContent || 'I received your message and I\'m processing it.',
         suggestions: result.output?.suggestions || result.suggestions || [],
         context: result.output?.context || result.context || {},
         tripData: result.output?.tripData || result.tripData || null,
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
-      console.log('📋 Final parsed response:', {
-        hasContent: !!finalResponse.content,
-        contentLength: finalResponse.content?.length,
-        hasSuggestions: !!finalResponse.suggestions,
-        suggestionsCount: finalResponse.suggestions?.length,
-        hasContext: Object.keys(finalResponse.context).length > 0,
-        shouldCreateTrip: finalResponse.shouldCreateTrip
-      });
+      console.log('📋 Final parsed response:', finalResponse);
       
       console.log('🎯 n8n workflow processing completed successfully');
       
