@@ -19,7 +19,7 @@ interface AIChatModalProps {
 const N8N_CONFIG = {
   webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
   enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
-  timeout: 30000 // 30 seconds timeout
+  timeout: 120000 // 2 minutes timeout for AI workflows
 };
 
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
@@ -138,7 +138,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
 
-      // Wait for the complete n8n workflow response
+      console.log('⏳ Waiting for n8n workflow response...');
       const response = await fetch(N8N_CONFIG.webhookUrl, {
         method: 'POST',
         headers: {
@@ -156,9 +156,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         return null; // Fall back to local AI instead of throwing
       }
 
-      console.log('⏳ n8n workflow completed, processing response...');
+      console.log('✅ n8n workflow HTTP response received, parsing...');
       const responseText = await response.text();
-      console.log('📥 n8n workflow response received, length:', responseText.length);
+      console.log('📥 n8n workflow response parsed, length:', responseText.length);
       
       let result;
       try {
@@ -166,14 +166,14 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         
         // Handle array responses from n8n (extract first item)
         if (Array.isArray(result) && result.length > 0) {
-          console.log('📦 n8n workflow returned array, using first item');
+          console.log('📦 n8n returned array, using first item');
           result = result[0];
         } else if (Array.isArray(result) && result.length === 0) {
-          console.error('❌ n8n workflow returned empty array');
+          console.error('❌ n8n returned empty array');
           return null;
         }
       } catch (parseError) {
-        console.error('❌ Failed to parse n8n workflow response as JSON:', parseError);
+        console.error('❌ Failed to parse n8n response as JSON:', parseError);
         return null; // Fall back to local AI
       }
       
@@ -193,7 +193,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       }
       
       if (!responseContent) {
-        console.warn('⚠️ No response content found in n8n workflow response, available fields:', Object.keys(result));
+        console.warn('⚠️ No response content found in n8n response, available fields:', Object.keys(result));
       }
       
       const finalResponse = {
@@ -204,7 +204,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
-      console.log('✅ n8n workflow completed successfully');
+      console.log('🎯 n8n workflow processing completed successfully');
       
       return finalResponse;
 
@@ -214,7 +214,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       if (error.name === 'AbortError') {
         console.log('⏰ n8n workflow timeout after', N8N_CONFIG.timeout / 1000, 'seconds');
       } else if (error.message.includes('Failed to fetch')) {
-        console.log('🌐 Network error - n8n URL may not be accessible or configured correctly');
+        console.log('🌐 Network error - n8n URL may not be accessible');
       }
       
       // Always return null to fall back to local AI
@@ -412,17 +412,18 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
     
     try {
-      let aiResponse;
+      let aiResponse = null;
       
       // Try n8n webhook first if enabled
       if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
         console.log('🔄 Attempting n8n webhook call...');
+        console.log('⏳ Waiting for n8n workflow to complete (timeout: 2 minutes)...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
         
         if (aiResponse) {
-          console.log('✅ n8n webhook successful:', aiResponse);
+          console.log('✅ n8n workflow completed successfully');
         } else {
-          console.log('❌ n8n webhook failed, falling back to local AI');
+          console.log('❌ n8n workflow failed or timed out, falling back to local AI');
         }
       }
       
@@ -432,7 +433,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         aiResponse = generateAIResponse(currentInput);
       }
 
-      // Add AI response after receiving webhook response
+      // Only add AI response after we have a complete response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -442,7 +443,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       };
 
       setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
 
       // Handle trip creation if suggested by n8n
       if (aiResponse.shouldCreateTrip && aiResponse.tripData) {
@@ -467,7 +467,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
-      setIsTyping(false);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -483,6 +482,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       };
       
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      // Always stop typing indicator
+      setIsTyping(false);
     }
   };
 
