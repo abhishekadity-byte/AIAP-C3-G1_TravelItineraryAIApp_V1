@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, User, Plane, MapPin, Calendar, Users, DollarSign, Sparkles, Loader } from 'lucide-react';
+import { X, Send, Bot, User, Plane, MapPin, Calendar, Users, DollarSign, Sparkles, Loader, CheckCircle, Star, Clock, Globe } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -20,6 +20,108 @@ const N8N_CONFIG = {
   webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
   enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
   timeout: 120000 // 2 minutes timeout for AI workflows
+};
+
+// Component to format AI responses with bullet points and structure
+const FormattedAIResponse: React.FC<{ content: string }> = ({ content }) => {
+  // Check if content has structured data (bullet points, numbered lists, etc.)
+  const formatContent = (text: string) => {
+    // Split by lines and process each line
+    const lines = text.split('\n').filter(line => line.trim());
+    const formattedLines: JSX.Element[] = [];
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Handle bullet points (-, *, •)
+      if (trimmedLine.match(/^[-*•]\s/)) {
+        const content = trimmedLine.replace(/^[-*•]\s/, '');
+        formattedLines.push(
+          <div key={index} className="flex items-start space-x-2 mb-2">
+            <CheckCircle size={14} className="text-green-400 mt-0.5 flex-shrink-0" />
+            <span>{content}</span>
+          </div>
+        );
+      }
+      // Handle numbered lists (1., 2., etc.)
+      else if (trimmedLine.match(/^\d+\.\s/)) {
+        const number = trimmedLine.match(/^(\d+)\./)?.[1];
+        const content = trimmedLine.replace(/^\d+\.\s/, '');
+        formattedLines.push(
+          <div key={index} className="flex items-start space-x-2 mb-2">
+            <div className="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0">
+              {number}
+            </div>
+            <span>{content}</span>
+          </div>
+        );
+      }
+      // Handle headers (##, ###)
+      else if (trimmedLine.match(/^#{2,3}\s/)) {
+        const level = (trimmedLine.match(/^(#{2,3})/)?.[1].length || 2) - 1;
+        const content = trimmedLine.replace(/^#{2,3}\s/, '');
+        const headerClass = level === 1 ? 'text-lg font-bold text-purple-300 mb-3 mt-4' : 'text-base font-semibold text-purple-200 mb-2 mt-3';
+        formattedLines.push(
+          <h3 key={index} className={headerClass}>
+            {content}
+          </h3>
+        );
+      }
+      // Handle special formatting for destinations, prices, etc.
+      else if (trimmedLine.includes('$') || trimmedLine.includes('€') || trimmedLine.includes('£')) {
+        formattedLines.push(
+          <div key={index} className="flex items-center space-x-2 mb-2 bg-green-500/10 border border-green-400/30 rounded-lg p-2">
+            <DollarSign size={14} className="text-green-400" />
+            <span>{trimmedLine}</span>
+          </div>
+        );
+      }
+      // Handle location/destination mentions
+      else if (trimmedLine.match(/\b(Paris|London|Tokyo|Rome|Barcelona|Amsterdam|Berlin|Vienna|Prague|Budapest|Florence|Venice|Madrid|Lisbon|Dublin|Edinburgh|Stockholm|Copenhagen|Oslo|Helsinki|Zurich|Geneva|Milan|Naples|Athens|Istanbul|Santorini|Mykonos|Crete|Rhodes|Dubrovnik|Split|Zagreb|Ljubljana|Bratislava|Krakow|Warsaw|Gdansk|Tallinn|Riga|Vilnius|Moscow|St\. Petersburg|Kiev|Minsk|Bucharest|Sofia|Belgrade|Sarajevo|Skopje|Tirana|Podgorica|Pristina)\b/i)) {
+        formattedLines.push(
+          <div key={index} className="flex items-center space-x-2 mb-2 bg-blue-500/10 border border-blue-400/30 rounded-lg p-2">
+            <MapPin size={14} className="text-blue-400" />
+            <span>{trimmedLine}</span>
+          </div>
+        );
+      }
+      // Handle time/duration mentions
+      else if (trimmedLine.match(/\b(\d+\s*(day|week|month|hour)s?|morning|afternoon|evening|night)\b/i)) {
+        formattedLines.push(
+          <div key={index} className="flex items-center space-x-2 mb-2 bg-purple-500/10 border border-purple-400/30 rounded-lg p-2">
+            <Clock size={14} className="text-purple-400" />
+            <span>{trimmedLine}</span>
+          </div>
+        );
+      }
+      // Handle recommendations or highlights
+      else if (trimmedLine.match(/\b(recommend|suggest|must-see|don't miss|highlight|best|top|popular|famous)\b/i)) {
+        formattedLines.push(
+          <div key={index} className="flex items-center space-x-2 mb-2 bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-2">
+            <Star size={14} className="text-yellow-400" />
+            <span>{trimmedLine}</span>
+          </div>
+        );
+      }
+      // Regular paragraphs
+      else {
+        formattedLines.push(
+          <p key={index} className="mb-2">
+            {trimmedLine}
+          </p>
+        );
+      }
+    });
+    
+    return formattedLines;
+  };
+  
+  // If content is simple (no special formatting), return as regular paragraph
+  if (!content.includes('\n') && !content.match(/^[-*•]\s/) && !content.match(/^\d+\.\s/)) {
+    return <p>{content}</p>;
+  }
+  
+  return <div className="space-y-1">{formatContent(content)}</div>;
 };
 
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
@@ -606,7 +708,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
                     : 'bg-black/40 backdrop-blur-xl border border-purple-500/30 text-white shadow-lg'
                 }`}>
-                  <p className="text-sm leading-relaxed">{message.content}</p>
+                  <div className="text-sm leading-relaxed">
+                    {message.type === 'ai' ? (
+                      <FormattedAIResponse content={message.content} />
+                    ) : (
+                      <p>{message.content}</p>
+                    )}
+                  </div>
                   <p className={`text-xs mt-2 ${
                     message.type === 'user' ? 'text-purple-100' : 'text-purple-300'
                   }`}>
