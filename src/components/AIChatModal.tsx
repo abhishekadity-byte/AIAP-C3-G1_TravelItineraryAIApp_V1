@@ -208,6 +208,40 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       let responseContent = result.response || result.message || result.content || result.text || result.reply;
       
+      // Check if the response content is a JSON string that needs parsing
+      if (responseContent && typeof responseContent === 'string') {
+        try {
+          // Try to parse as JSON in case n8n returned a stringified JSON
+          const parsedResponse = JSON.parse(responseContent);
+          console.log('🔍 Parsed JSON response:', parsedResponse);
+          
+          // Extract the actual response from the parsed JSON
+          if (parsedResponse.response) {
+            responseContent = parsedResponse.response;
+            console.log('✅ Extracted response from JSON:', responseContent);
+            
+            // Also extract suggestions if available
+            if (parsedResponse.suggestions && Array.isArray(parsedResponse.suggestions)) {
+              result.suggestions = parsedResponse.suggestions;
+              console.log('✅ Extracted suggestions from JSON:', result.suggestions);
+            }
+            
+            // Extract other fields if available
+            if (parsedResponse.context) {
+              result.context = parsedResponse.context;
+            }
+            if (parsedResponse.tripData) {
+              result.tripData = parsedResponse.tripData;
+            }
+            if (parsedResponse.shouldCreateTrip !== undefined) {
+              result.shouldCreateTrip = parsedResponse.shouldCreateTrip;
+            }
+          }
+        } catch (parseError) {
+          console.log('📝 Response is not JSON, using as plain text:', responseContent);
+        }
+      }
+      
       // Handle escaped newlines and clean up the content
       if (responseContent && typeof responseContent === 'string') {
         responseContent = responseContent.replace(/\\n/g, '\n').trim();
