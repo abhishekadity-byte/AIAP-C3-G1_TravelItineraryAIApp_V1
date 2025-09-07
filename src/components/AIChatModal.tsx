@@ -546,6 +546,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           };
           setMessages(prev => [...prev, tripCreationMessage]);
         }, 1000);
+      }
       
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
