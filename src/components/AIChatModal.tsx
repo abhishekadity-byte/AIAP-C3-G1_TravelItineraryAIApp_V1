@@ -207,6 +207,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('  - result.content:', result.content);
       
       let responseContent = result.response || result.message || result.content || result.text || result.reply;
+      let suggestions = result.suggestions || [];
       
       // Check if the response content is a JSON string that needs parsing
       if (responseContent && typeof responseContent === 'string') {
@@ -222,7 +223,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             
             // Also extract suggestions if available
             if (parsedResponse.suggestions && Array.isArray(parsedResponse.suggestions)) {
-              result.suggestions = parsedResponse.suggestions;
+              suggestions = parsedResponse.suggestions;
               console.log('✅ Extracted suggestions from JSON:', result.suggestions);
             }
             
@@ -261,7 +262,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
               
               // Also extract suggestions if available
               if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
-                result.suggestions = parsedContent.suggestions;
+                suggestions = parsedContent.suggestions;
                 console.log('✅ Extracted suggestions from JSON:', result.suggestions);
               }
               
@@ -298,7 +299,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       const finalResponse = {
         content: responseContent || `I received your message but couldn't parse the response properly. Raw response: ${JSON.stringify(result).substring(0, 100)}...`,
-        suggestions: result.suggestions || [],
+        suggestions: suggestions,
         context: result.context || {},
         tripData: result.tripData || null,
         shouldCreateTrip: result.shouldCreateTrip || false
