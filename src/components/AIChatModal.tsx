@@ -172,6 +172,12 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         if (Array.isArray(result) && result.length > 0) {
           console.log('📦 n8n returned array, using first item');
           result = result[0];
+          
+          // Check if the array item has an 'output' field
+          if (result && result.output) {
+            console.log('🎯 Found output field in array item, using it');
+            result = result.output;
+          }
         } else if (Array.isArray(result) && result.length === 0) {
           console.error('❌ n8n returned empty array');
           return null;
@@ -197,11 +203,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       // Extract the actual response content with detailed logging
       console.log('🔍 Looking for response in these fields:');
       console.log('  - result.response:', result.response);
-      console.log('  - result.output?.response:', result.output?.response);
       console.log('  - result.message:', result.message);
       console.log('  - result.content:', result.content);
       
-      let responseContent = result.response || result.output?.response || result.message || result.content || result.text || result.reply;
+      let responseContent = result.response || result.message || result.content || result.text || result.reply;
       
       // Handle escaped newlines and clean up the content
       if (responseContent && typeof responseContent === 'string') {
@@ -225,10 +230,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       const finalResponse = {
         content: responseContent || `I received your message but couldn't parse the response properly. Raw response: ${JSON.stringify(result).substring(0, 100)}...`,
-        suggestions: result.output?.suggestions || result.suggestions || [],
-        context: result.output?.context || result.context || {},
-        tripData: result.output?.tripData || result.tripData || null,
-        shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
+        suggestions: result.suggestions || [],
+        context: result.context || {},
+        tripData: result.tripData || null,
+        shouldCreateTrip: result.shouldCreateTrip || false
       };
       
       console.log('📋 Final parsed response:');
