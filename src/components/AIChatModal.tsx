@@ -101,23 +101,23 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         inputRef.current.focus();
       }
       
-      // Test n8n connection when modal opens
-      if (N8N_CONFIG.enabled) {
-        console.log('🔍 Modal opened, testing n8n connection...');
-        console.log('🔍 N8N_CONFIG:', N8N_CONFIG);
-        testN8nConnection();
-      }
     } else {
       // Reset session when modal closes
       resetChatSession();
+    }
+  }, [isOpen]);
+
+  // Separate effect for testing n8n connection only once when modal opens
+  useEffect(() => {
+    if (isOpen && N8N_CONFIG.enabled && !sessionInitialized) {
+      console.log('🔍 Testing n8n connection once...');
+      testN8nConnection();
     }
   }, [isOpen, sessionInitialized]);
 
   // Test n8n connection
   const testN8nConnection = async () => {
-    console.log('🧪 testN8nConnection called');
-    console.log('🧪 N8N_CONFIG.enabled:', N8N_CONFIG.enabled);
-    console.log('🧪 N8N_CONFIG.webhookUrl:', N8N_CONFIG.webhookUrl);
+    console.log('🧪 Testing n8n connection (single call)');
     
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
       console.log('❌ n8n not enabled or no webhook URL');
@@ -133,7 +133,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     }
 
     setN8nStatus('testing');
-    console.log('🔄 Testing n8n connection to:', N8N_CONFIG.webhookUrl);
+    console.log('🔄 Single connection test to:', N8N_CONFIG.webhookUrl);
     
     try {
       // Simple test request
@@ -150,9 +150,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         signal: AbortSignal.timeout(5000) // 5 second timeout for test
       });
 
-      console.log('🧪 Test response status:', response.status);
-      console.log('🧪 Test response ok:', response.ok);
-      
       // Accept any response that's not a network error
       // n8n webhooks might return various status codes but still be working
       if (response.status < 500) {
@@ -163,7 +160,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         console.log('❌ n8n connection failed with server error:', response.status);
       }
     } catch (error) {
-      console.log('🧪 Test connection error:', error);
       // Only mark as disconnected for actual network errors
       if (error.name === 'AbortError') {
         setN8nStatus('disconnected');
