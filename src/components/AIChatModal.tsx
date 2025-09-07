@@ -15,13 +15,6 @@ interface AIChatModalProps {
   onCreateTrip: (tripData: any) => void;
 }
 
-// Configuration for n8n webhook
-const N8N_CONFIG = {
-  webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
-  enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
-  timeout: 120000 // 2 minutes timeout for AI workflows
-};
-
 const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -40,13 +33,21 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
+  // Configuration for n8n webhook - moved inside component to avoid initialization issues
+  const getN8nConfig = () => ({
+    webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
+    enabled: import.meta.env.VITE_N8N_ENABLED === 'true',
+    timeout: 120000 // 2 minutes timeout for AI workflows
+  });
+
   // Initialize chat session with welcome message
   const initializeChatSession = () => {
     if (!sessionInitialized) {
+      const n8nConfig = getN8nConfig();
       const welcomeMessage: Message = {
         id: '1',
         type: 'ai',
-        content: N8N_CONFIG.enabled 
+        content: n8nConfig.enabled 
           ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
           : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
         timestamp: new Date(),
@@ -108,20 +109,22 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
 
   // Function to call n8n webhook
   const callN8nWebhook = async (userMessage: string, context: any) => {
-    console.log('📡 Starting n8n webhook call for message:', userMessage);
-    console.log('🔧 N8N_CONFIG:', N8N_CONFIG);
+    const n8nConfig = getN8nConfig();
     
-    if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
+    console.log('📡 Starting n8n webhook call for message:', userMessage);
+    console.log('🔧 n8nConfig:', n8nConfig);
+    
+    if (!n8nConfig.enabled || !n8nConfig.webhookUrl) {
       console.log('❌ n8n not enabled or URL not configured:', {
-        enabled: N8N_CONFIG.enabled,
-        hasUrl: !!N8N_CONFIG.webhookUrl,
-        url: N8N_CONFIG.webhookUrl
+        enabled: n8nConfig.enabled,
+        hasUrl: !!n8nConfig.webhookUrl,
+        url: n8nConfig.webhookUrl
       });
       return null;
     }
     
     // Check for placeholder URL
-    if (N8N_CONFIG.webhookUrl.includes('your-n8n-instance.com') || N8N_CONFIG.webhookUrl.includes('your-ngrok-url')) {
+    if (n8nConfig.webhookUrl.includes('your-n8n-instance.com') || n8nConfig.webhookUrl.includes('your-ngrok-url')) {
       console.log('❌ n8n URL contains placeholder text, not configured properly');
       return null;
     }
@@ -138,13 +141,13 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         sessionId: sessionIdRef.current // Use persistent session ID
       };
 
-      console.log('📤 Sending payload to n8n webhook:', N8N_CONFIG.webhookUrl, payload);
+      console.log('📤 Sending payload to n8n webhook:', n8nConfig.webhookUrl, payload);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), N8N_CONFIG.timeout);
+      const timeoutId = setTimeout(() => controller.abort(), n8nConfig.timeout);
 
       console.log('⏳ Waiting for n8n workflow response...');
-      const response = await fetch(N8N_CONFIG.webhookUrl, {
+      const response = await fetch(n8nConfig.webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -269,7 +272,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.error('❌ Error calling n8n workflow:', error);
       
       if (error.name === 'AbortError') {
-        console.log('⏰ n8n workflow timeout after', N8N_CONFIG.timeout / 1000, 'seconds');
+        console.log('⏰ n8n workflow timeout after', n8nConfig.timeout / 1000, 'seconds');
       } else if (error.message.includes('Failed to fetch')) {
         console.log('🌐 Network error - n8n URL may not be accessible');
       }
@@ -477,13 +480,14 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     
     try {
       let aiResponse = null;
+      const n8nConfig = getN8nConfig();
       
       // Try n8n webhook first if enabled
       console.log('🔍 Checking n8n configuration before call...');
-      console.log('🔧 N8N enabled:', N8N_CONFIG.enabled);
-      console.log('🔧 N8N URL:', N8N_CONFIG.webhookUrl);
+      console.log('🔧 N8N enabled:', n8nConfig.enabled);
+      console.log('🔧 N8N URL:', n8nConfig.webhookUrl);
       
-      if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl && !N8N_CONFIG.webhookUrl.includes('your-')) {
+      if (n8nConfig.enabled && n8nConfig.webhookUrl && !n8nConfig.webhookUrl.includes('your-')) {
         console.log('🔄 Attempting n8n webhook call...');
         console.log('⏳ Waiting for n8n workflow to complete (timeout: 2 minutes)...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
@@ -496,9 +500,9 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         }
       } else {
         console.log('⚠️ n8n webhook call skipped due to configuration:', {
-          enabled: N8N_CONFIG.enabled,
-          hasUrl: !!N8N_CONFIG.webhookUrl,
-          urlValid: N8N_CONFIG.webhookUrl && !N8N_CONFIG.webhookUrl.includes('your-')
+          enabled: n8nConfig.enabled,
+          hasUrl: !!n8nConfig.webhookUrl,
+          urlValid: n8nConfig.webhookUrl && !n8nConfig.webhookUrl.includes('your-')
         });
       }
       
@@ -543,6 +547,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           setMessages(prev => [...prev, tripCreationMessage]);
         }, 1000);
       } else if (!aiResponse.shouldCreateTrip && !N8N_CONFIG.enabled) {
+      } else if (!aiResponse.shouldCreateTrip && !n8nConfig.enabled) {
         // Only check for trip creation using local logic if n8n didn't handle it
         checkForTripCreation(currentInput, newContext);
       }
@@ -649,7 +654,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             <div>
               <h2 className="text-xl font-semibold">AI Travel Assistant</h2>
               <p className="text-blue-100 text-sm">
-                {N8N_CONFIG.enabled 
+                {getN8nConfig().enabled 
                   ? `Powered by n8n workflows • Session: ${sessionIdRef.current.split('-')[1]}`
                   : 'Let\'s plan your perfect trip together!'
                 }
@@ -721,7 +726,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
                   <div className="flex items-center space-x-2">
                     <Loader className="animate-spin text-purple-400" size={16} />
                     <p className="text-sm text-purple-200">
-                      {N8N_CONFIG.enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
+                      {getN8nConfig().enabled ? 'AI workflow is processing...' : 'AI is thinking...'}
                     </p>
                   </div>
                 </div>
