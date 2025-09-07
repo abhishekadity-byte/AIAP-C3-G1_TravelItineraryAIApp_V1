@@ -43,11 +43,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   // Initialize chat session with welcome message
   const initializeChatSession = () => {
     if (!sessionInitialized) {
-      const welcomeMessage: Message = {
         id: '1',
         type: 'ai',
         content: N8N_CONFIG.enabled 
-          ? "Hi there! 👋 I'm your AI travel assistant powered by advanced AI workflows via n8n. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
+        content: N8N_CONFIG.enabled 
           : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
         timestamp: new Date(),
         suggestions: [
@@ -111,7 +110,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
     console.log('📡 Calling n8n webhook for message:', userMessage);
     
     if (!N8N_CONFIG.enabled || !N8N_CONFIG.webhookUrl) {
-      console.log('❌ n8n not enabled or URL not configured');
       return null;
     }
     
@@ -425,7 +423,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       // Try n8n webhook first if enabled
       if (N8N_CONFIG.enabled && N8N_CONFIG.webhookUrl) {
-        console.log('🔄 Attempting n8n webhook call...');
         console.log('⏳ Waiting for n8n workflow to complete (timeout: 2 minutes)...');
         aiResponse = await callN8nWebhook(currentInput, newContext);
         
