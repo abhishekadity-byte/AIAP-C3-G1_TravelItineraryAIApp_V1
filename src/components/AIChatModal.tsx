@@ -43,10 +43,11 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   // Initialize chat session with welcome message
   const initializeChatSession = () => {
     if (!sessionInitialized) {
+      const welcomeMessage = {
         id: '1',
         type: 'ai',
         content: N8N_CONFIG.enabled 
-        content: N8N_CONFIG.enabled 
+          ? "Hi there! 👋 I'm your AI travel assistant powered by advanced workflows. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for."
           : "Hi there! 👋 I'm your AI travel assistant. I'm here to help you plan the perfect trip! Let's start by telling me where you'd like to go or what kind of experience you're looking for.",
         timestamp: new Date(),
         suggestions: [
