@@ -159,14 +159,10 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       console.log('✅ n8n workflow HTTP response received, parsing...');
       const responseText = await response.text();
       console.log('📥 n8n workflow response parsed, length:', responseText.length);
-      console.log('📄 Raw n8n response text:', responseText);
       
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log('🔍 Parsed JSON result:', result);
-        console.log('🔍 Result type:', typeof result);
-        console.log('🔍 Result keys:', Object.keys(result));
         
         // Handle array responses from n8n (extract first item)
         if (Array.isArray(result) && result.length > 0) {
@@ -178,63 +174,44 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         }
       } catch (parseError) {
         console.error('❌ Failed to parse n8n response as JSON:', parseError);
-        console.log('📄 Attempting to use raw response as content...');
-        
-        // Try to use the raw response as content if it looks like text
-        if (responseText && responseText.length > 0 && !responseText.startsWith('<')) {
-          return {
-            content: `Raw n8n response: ${responseText}`,
-            suggestions: [],
-            context: {},
-            tripData: null,
-            shouldCreateTrip: false
-          };
-        }
-        
         return null; // Fall back to local AI
       }
       
       // Extract the actual response content with detailed logging
-      console.log('🔍 Looking for response in these fields:');
-      console.log('  - result.response:', result.response);
-      console.log('  - result.output?.response:', result.output?.response);
-      console.log('  - result.message:', result.message);
-      console.log('  - result.content:', result.content);
-      
-      let responseContent = result.response || result.output?.response || result.message || result.content || result.text || result.reply;
-      
-      // Handle escaped newlines and clean up the content
-      if (responseContent && typeof responseContent === 'string') {
-        responseContent = responseContent.replace(/\\n/g, '\n').trim();
-        console.log('🧹 Cleaned response content:', responseContent);
+      // Check for nested output structure first, then fallback to direct fields
+      let responseContent;
+      if (result.output && result.output.response) {
+        responseContent = result.output.response;
+      } else if (result.response) {
+        responseContent = result.response;
+      } else if (result.message) {
+        responseContent = result.message;
+      } else if (result.content) {
+        responseContent = result.content;
       } else {
-        console.log('❌ No valid response content found or not a string:', responseContent);
+        responseContent = result.text || result.reply;
       }
       
-      // If still no content, try to extract from any string field
       if (!responseContent) {
-        console.log('🔍 Trying to find any string content in result...');
-        for (const [key, value] of Object.entries(result)) {
-          if (typeof value === 'string' && value.length > 10) {
-            console.log(`🎯 Found potential content in ${key}:`, value);
-            responseContent = value;
-            break;
-          }
-        }
+        console.warn('⚠️ No response content found in n8n response, available fields:', Object.keys(result));
       }
       
       const finalResponse = {
-        content: responseContent || `I received your message but couldn't parse the response properly. Raw response: ${JSON.stringify(result).substring(0, 100)}...`,
-        suggestions: result.output?.suggestions || result.suggestions || [],
+        content: responseContent ? responseContent.replace(/\\n/g, '\n') : 'I received your message and I\'m processing it.',
+        suggestions: result.output?.suggestions || result.suggestions || null,
         context: result.output?.context || result.context || {},
         tripData: result.output?.tripData || result.tripData || null,
         shouldCreateTrip: result.output?.shouldCreateTrip || result.shouldCreateTrip || false
       };
       
-      console.log('📋 Final parsed response:');
-      console.log('  - content:', finalResponse.content);
-      console.log('  - suggestions:', finalResponse.suggestions);
-      console.log('  - context:', finalResponse.context);
+      console.log('📋 Final parsed response:', {
+        hasContent: !!finalResponse.content,
+        contentLength: finalResponse.content?.length,
+        hasSuggestions: !!finalResponse.suggestions,
+        suggestionsCount: finalResponse.suggestions?.length,
+        hasContext: Object.keys(finalResponse.context).length > 0,
+        shouldCreateTrip: finalResponse.shouldCreateTrip
+      });
       
       console.log('🎯 n8n workflow processing completed successfully');
       
@@ -462,14 +439,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       // Fall back to local AI if n8n fails or is disabled
       if (!aiResponse) {
         console.log('🤖 Using local AI fallback');
-        const localResponse = generateAIResponse(currentInput);
-        aiResponse = {
-          content: localResponse.content,
-          suggestions: localResponse.suggestions || [],
-          context: {},
-          tripData: null,
-          shouldCreateTrip: false
-        };
+        aiResponse = generateAIResponse(currentInput);
       }
 
       // Only add AI response after we have a complete response
@@ -478,7 +448,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
         type: 'ai',
         content: aiResponse.content,
         timestamp: new Date(),
-        suggestions: aiResponse.suggestions || []
+        suggestions: aiResponse.suggestions || undefined
       };
 
       setMessages(prev => [...prev, aiMessage]);
