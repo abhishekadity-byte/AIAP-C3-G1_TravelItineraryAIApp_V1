@@ -44,7 +44,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const initializeChatSession = () => {
     if (!sessionInitialized) {
       const n8nConfig = getN8nConfig();
-      const n8nConfig = getN8nConfig();
       const welcomeMessage: Message = {
         id: '1',
         type: 'ai',
