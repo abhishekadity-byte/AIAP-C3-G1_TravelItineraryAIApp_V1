@@ -44,6 +44,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
   const initializeChatSession = () => {
     if (!sessionInitialized) {
       const n8nConfig = getN8nConfig();
+      const n8nConfig = getN8nConfig();
       const welcomeMessage: Message = {
         id: '1',
         type: 'ai',
@@ -546,9 +547,6 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
           };
           setMessages(prev => [...prev, tripCreationMessage]);
         }, 1000);
-      } else if (!aiResponse.shouldCreateTrip && !n8nConfig.enabled) {
-        checkForTripCreation(currentInput, newContext);
-      }
       
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
