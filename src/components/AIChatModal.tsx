@@ -211,40 +211,7 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
       
       // Check if the response content is a JSON string that needs parsing
       if (responseContent && typeof responseContent === 'string') {
-        try {
-          // Try to parse as JSON in case n8n returned a stringified JSON
-          const parsedResponse = JSON.parse(responseContent);
-          console.log('🔍 Parsed JSON response:', parsedResponse);
-          
-          // Extract the actual response from the parsed JSON
-          if (parsedResponse.response) {
-            responseContent = parsedResponse.response;
-            console.log('✅ Extracted response from JSON:', responseContent);
-            
-            // Also extract suggestions if available
-            if (parsedResponse.suggestions && Array.isArray(parsedResponse.suggestions)) {
-              suggestions = parsedResponse.suggestions;
-              console.log('✅ Extracted suggestions from JSON:', result.suggestions);
-            }
-            
-            // Extract other fields if available
-            if (parsedResponse.context) {
-              result.context = parsedResponse.context;
-            }
-            if (parsedResponse.tripData) {
-              result.tripData = parsedResponse.tripData;
-            }
-            if (parsedResponse.shouldCreateTrip !== undefined) {
-              result.shouldCreateTrip = parsedResponse.shouldCreateTrip;
-            }
-          }
-        } catch (parseError) {
-          console.log('📝 Response is not JSON, using as plain text:', responseContent);
-        }
-      }
-      
-      // Handle escaped newlines and clean up the content
-      if (responseContent && typeof responseContent === 'string') {
+        // Handle escaped newlines first
         responseContent = responseContent.replace(/\\n/g, '\n').trim();
         console.log('🧹 Cleaned response content:', responseContent);
         
@@ -259,30 +226,28 @@ const AIChatModal: React.FC<AIChatModalProps> = ({ isOpen, onClose, onCreateTrip
             if (parsedContent.response) {
               responseContent = parsedContent.response;
               console.log('✅ Extracted response from JSON:', responseContent);
-              
-              // Also extract suggestions if available
-              if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
-                suggestions = parsedContent.suggestions;
-                console.log('✅ Extracted suggestions from JSON:', result.suggestions);
-              }
-              
-              // Extract other fields if available
-              if (parsedContent.context) {
-                result.context = parsedContent.context;
-              }
-              if (parsedContent.tripData) {
-                result.tripData = parsedContent.tripData;
-              }
-              if (parsedContent.shouldCreateTrip !== undefined) {
-                result.shouldCreateTrip = parsedContent.shouldCreateTrip;
-              }
+            }
+            
+            // Extract suggestions if available
+            if (parsedContent.suggestions && Array.isArray(parsedContent.suggestions)) {
+              suggestions = parsedContent.suggestions;
+              console.log('✅ Extracted suggestions from JSON:', suggestions);
+            }
+            
+            // Extract other fields if available
+            if (parsedContent.context) {
+              result.context = parsedContent.context;
+            }
+            if (parsedContent.tripData) {
+              result.tripData = parsedContent.tripData;
+            }
+            if (parsedContent.shouldCreateTrip !== undefined) {
+              result.shouldCreateTrip = parsedContent.shouldCreateTrip;
             }
           } catch (parseError) {
             console.log('📝 Response is not valid JSON, using as plain text:', responseContent);
           }
         }
-      } else {
-        console.log('❌ No valid response content found or not a string:', responseContent);
       }
       
       // If still no content, try to extract from any string field
